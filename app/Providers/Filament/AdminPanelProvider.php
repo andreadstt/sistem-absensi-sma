@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandName('Administrator SMAN 10')
             // Disable Filament login page - use Breeze login instead
             // ->login()
             ->colors([

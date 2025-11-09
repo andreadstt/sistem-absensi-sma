@@ -69,6 +69,12 @@ class TeacherResource extends Resource
                     ->label('Nama Guru')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('user.email')
+                    ->label('Email')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->icon('heroicon-m-envelope'),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Akun User')
                     ->sortable()
@@ -78,10 +84,13 @@ class TeacherResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->label('Telepon')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('teachingAssignments_count')
-                    ->counts('teachingAssignments')
-                    ->label('Jumlah Mengajar')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('default_password')
+                    ->label('Default Password')
+                    ->badge()
+                    ->color('warning')
+                    ->copyable()
+                    ->icon('heroicon-m-key')
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime('d M Y')

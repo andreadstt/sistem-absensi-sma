@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
@@ -28,7 +27,7 @@ const toggleTheme = () => {
 
 <template>
     <div>
-        <div class="min-h-screen bg-base-200">
+        <div class="min-h-screen" style="background-color: #FFFBF1;">
             <nav class="border-b border-base-300 bg-base-100">
                 <!-- Primary Navigation Menu -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -37,8 +36,10 @@ const toggleTheme = () => {
                             <!-- Logo -->
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
-                                    <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800"
+                                    <img 
+                                        src="/images/logo.png" 
+                                        alt="Logo SMAN 10" 
+                                        class="block h-12 w-auto object-contain"
                                     />
                                 </Link>
                             </div>

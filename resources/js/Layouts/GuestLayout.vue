@@ -1,6 +1,4 @@
 <script setup>
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Link } from '@inertiajs/vue3';
 import { onMounted } from 'vue';
 
 // Load theme from localStorage on mount
@@ -12,16 +10,23 @@ onMounted(() => {
 
 <template>
     <div
-        class="flex min-h-screen flex-col items-center bg-base-200 pt-6 sm:justify-center sm:pt-0"
+        class="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 px-4 py-8"
     >
-        <div>
-            <Link href="/">
-                <ApplicationLogo class="h-20 w-20 fill-current text-gray-500" />
-            </Link>
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-3">
+                PORTAL GURU SMAN 10
+            </h1>
+            <div class="flex justify-center mb-4">
+                <img 
+                    src="/images/logo.png" 
+                    alt="Logo SMAN 10" 
+                    class="h-24 w-auto object-contain"
+                />
+            </div>
         </div>
 
         <div
-            class="mt-6 w-full overflow-hidden bg-base-100 px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg"
+            class="w-full overflow-hidden bg-white dark:bg-gray-800 px-8 py-8 shadow-xl sm:max-w-md sm:rounded-2xl border border-gray-200 dark:border-gray-700"
         >
             <slot />
         </div>

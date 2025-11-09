@@ -224,6 +224,7 @@ class TeacherRegistrationResource extends Resource
                 'name' => $registration->name,
                 'nip' => $registration->nip,
                 'phone' => $registration->phone,
+                'default_password' => $password,
             ]);
 
             // Update registration status

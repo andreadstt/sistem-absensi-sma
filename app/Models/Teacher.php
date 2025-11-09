@@ -13,6 +13,7 @@ class Teacher extends Model
         'nip',
         'name',
         'phone',
+        'default_password',
     ];
 
     /**

@@ -48,8 +48,33 @@ class DashboardController extends Controller
             ->with(['classRoom.academicYear', 'classRoom.program', 'subject', 'classRoom.students'])
             ->get()
             ->groupBy('class_room_id')
-            ->map(function ($assignments, $classRoomId) {
+            ->map(function ($assignments, $classRoomId) use ($teacher) {
                 $classRoom = $assignments->first()->classRoom;
+                
+                // Get schedules for this class
+                $classSchedules = Schedule::where('teacher_id', $teacher->id)
+                    ->where('class_room_id', $classRoomId)
+                    ->orderBy('weekday')
+                    ->orderBy('time_slot')
+                    ->get()
+                    ->map(function ($schedule) {
+                        $dayName = match($schedule->weekday) {
+                            1 => 'Senin',
+                            2 => 'Selasa',
+                            3 => 'Rabu',
+                            4 => 'Kamis',
+                            5 => 'Jumat',
+                            6 => 'Sabtu',
+                            7 => 'Minggu',
+                            default => '-',
+                        };
+                        return [
+                            'day' => $dayName,
+                            'time_slot' => $schedule->time_slot,
+                            'subject_name' => $schedule->subject->name ?? '-',
+                        ];
+                    });
+                
                 return [
                     'class_room_id' => $classRoomId,
                     'class_name' => $classRoom->full_name ?? $classRoom->name,
@@ -62,6 +87,7 @@ class DashboardController extends Controller
                             'name' => $assignment->subject->name,
                         ];
                     })->values(),
+                    'schedules' => $classSchedules,
                 ];
             })->values();
 

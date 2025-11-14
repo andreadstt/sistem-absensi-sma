@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\ClassRoom;
+use App\Models\Program;
 use App\Observers\ClassRoomObserver;
+use App\Observers\ProgramObserver;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,5 +28,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Register observers
         ClassRoom::observe(ClassRoomObserver::class);
+        Program::observe(ProgramObserver::class);
     }
 }

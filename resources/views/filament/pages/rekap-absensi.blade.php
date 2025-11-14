@@ -22,17 +22,32 @@
         </x-filament::section>
 
         <!-- Results Table -->
-        @if (!empty($this->data['class_room_id']) && !empty($this->data['date']))
+        @php
+            $exportType = $this->data['export_type'] ?? 'daily';
+            $hasRequiredData =
+                !empty($this->data['class_room_id']) &&
+                (($exportType === 'daily' && !empty($this->data['date'])) ||
+                    ($exportType === 'semester' && !empty($this->data['semester']) && !empty($this->data['year'])));
+        @endphp
+
+        @if ($hasRequiredData)
             <x-filament::section>
                 <x-slot name="heading">
                     Attendance Records
                 </x-slot>
 
                 <x-slot name="description">
-                    Showing attendance for
-                    <strong>{{ \App\Models\ClassRoom::find($this->data['class_room_id'])?->name }}</strong>
-                    on
-                    <strong>{{ \Carbon\Carbon::parse($this->data['date'])->format('F j, Y') }}</strong>
+                    @if ($exportType === 'daily')
+                        Showing attendance for
+                        <strong>{{ \App\Models\ClassRoom::find($this->data['class_room_id'])?->name }}</strong>
+                        on
+                        <strong>{{ \Carbon\Carbon::parse($this->data['date'])->format('F j, Y') }}</strong>
+                    @else
+                        Showing semester report for
+                        <strong>{{ \App\Models\ClassRoom::find($this->data['class_room_id'])?->name }}</strong>
+                        -
+                        <strong>Semester {{ $this->data['semester'] }} ({{ $this->data['year'] }})</strong>
+                    @endif
                 </x-slot>
 
                 {{ $this->table }}

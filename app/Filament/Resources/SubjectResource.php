@@ -61,10 +61,6 @@ class SubjectResource extends Resource
                     ->label('Nama Mata Pelajaran')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('teachingAssignments_count')
-                    ->label('Guru Mengajar')
-                    ->counts('teachingAssignments')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime('d M Y')

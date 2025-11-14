@@ -27,8 +27,8 @@ const toggleTheme = () => {
 
 <template>
     <div>
-        <div class="min-h-screen" style="background-color: #FFFBF1;">
-            <nav class="border-b border-base-300 bg-base-100">
+        <div class="min-h-screen bg-gray-50">
+            <nav class="border-b border-gray-200 bg-white shadow-sm">
                 <!-- Primary Navigation Menu -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex h-16 justify-between">
@@ -260,7 +260,7 @@ const toggleTheme = () => {
 
             <!-- Page Heading -->
             <header
-                class="bg-white shadow"
+                class="bg-white shadow-sm border-b border-gray-200"
                 v-if="$slots.header"
             >
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">

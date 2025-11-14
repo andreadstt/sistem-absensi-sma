@@ -47,9 +47,9 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 'Laporan',
                 'Akademik',
-                'Manajemen Pengajar',
-                'Data Master',
+                'Jadwal Kelas',
                 'Manajemen User',
+                'Data Master',
             ])
             ->middleware([
                 EncryptCookies::class,

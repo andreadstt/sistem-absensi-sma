@@ -21,90 +21,80 @@ class ScheduleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static ?string $navigationLabel = 'Jadwal Pelajaran';
+    protected static ?string $navigationLabel = 'Jadwal Kelas';
 
     protected static ?string $modelLabel = 'Jadwal';
 
-    protected static ?string $pluralModelLabel = 'Jadwal Pelajaran';
+    protected static ?string $pluralModelLabel = 'Jadwal Kelas';
 
-    protected static ?string $navigationGroup = 'Manajemen Pengajar';
+    protected static ?string $navigationGroup = 'Jadwal Kelas';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('teacher_id')
-                    ->label('Guru')
-                    ->relationship('teacher', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (Forms\Set $set) {
-                        $set('subject_id', null);
-                        $set('class_room_id', null);
-                    }),
-                Forms\Components\Select::make('subject_id')
-                    ->label('Mata Pelajaran')
-                    ->options(function (Get $get) {
-                        $teacherId = $get('teacher_id');
-                        if (!$teacherId) {
-                            return [];
-                        }
-                        return TeachingAssignment::where('teacher_id', $teacherId)
-                            ->with('subject')
-                            ->get()
-                            ->pluck('subject.name', 'subject_id')
-                            ->unique();
-                    })
-                    ->searchable()
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (Forms\Set $set) {
-                        $set('class_room_id', null);
-                    })
-                    ->helperText('Hanya mapel yang diampu oleh guru terpilih'),
-                Forms\Components\Select::make('class_room_id')
-                    ->label('Kelas')
-                    ->options(function (Get $get) {
-                        $teacherId = $get('teacher_id');
-                        $subjectId = $get('subject_id');
-                        if (!$teacherId || !$subjectId) {
-                            return [];
-                        }
-                        return TeachingAssignment::where('teacher_id', $teacherId)
-                            ->where('subject_id', $subjectId)
-                            ->with('classRoom')
-                            ->get()
-                            ->pluck('classRoom.name', 'class_room_id');
-                    })
-                    ->searchable()
-                    ->required()
-                    ->helperText('Hanya kelas yang diampu guru untuk mapel terpilih'),
-                Forms\Components\Select::make('weekday')
-                    ->label('Hari')
-                    ->options([
-                        1 => 'Senin',
-                        2 => 'Selasa',
-                        3 => 'Rabu',
-                        4 => 'Kamis',
-                        5 => 'Jumat',
-                        6 => 'Sabtu',
-                        7 => 'Minggu',
+                Forms\Components\Section::make('Penugasan Mengajar')
+                    ->description('Pilih Kelas, guru, dan mata pelajaran. Penugasan akan dibuat otomatis jika belum ada.')
+                    ->schema([
+                        Forms\Components\Select::make('class_room_id')
+                            ->label('Kelas')
+                            ->relationship(
+                                'classRoom',
+                                'name',
+                                fn(Builder $query) => $query
+                                    ->whereHas('academicYear', fn($q) => $q->where('is_active', true))
+                                    ->orderBy('grade_level')
+                                    ->orderBy('name')
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->helperText('Hanya kelas dari tahun ajaran aktif'),
+                        Forms\Components\Select::make('teacher_id')
+                            ->label('Guru')
+                            ->relationship('teacher', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->live(),
+                        Forms\Components\Select::make('subject_id')
+                            ->label('Mata Pelajaran')
+                            ->relationship('subject', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->live()
                     ])
-                    ->required(),
-                Forms\Components\TextInput::make('time_slot')
-                    ->label('Jam Pelajaran')
-                    ->placeholder('07:00-08:00')
-                    ->helperText('Format: HH:MM-HH:MM (contoh: 07:00-08:00)')
-                    ->required()
-                    ->maxLength(255)
-                    ->regex('/^\d{2}:\d{2}-\d{2}:\d{2}$/')
-                    ->validationMessages([
-                        'regex' => 'Format jam harus HH:MM-HH:MM (contoh: 07:00-08:00)',
-                    ]),
+                    ->columns(3),
+                Forms\Components\Section::make('Jadwal Pelajaran')
+                    ->description('Tentukan hari dan jam untuk mata pelajaran ini.')
+                    ->schema([
+                        Forms\Components\Select::make('weekday')
+                            ->label('Hari')
+                            ->options([
+                                1 => 'Senin',
+                                2 => 'Selasa',
+                                3 => 'Rabu',
+                                4 => 'Kamis',
+                                5 => 'Jumat',
+                                6 => 'Sabtu',
+                                7 => 'Minggu',
+                            ])
+                            ->required(),
+                        Forms\Components\TextInput::make('time_slot')
+                            ->label('Jam Pelajaran')
+                            ->placeholder('07:00-08:00')
+                            ->helperText('Format: HH:MM-HH:MM (contoh: 07:00-08:00)')
+                            ->required()
+                            ->maxLength(255)
+                            ->regex('/^\d{2}:\d{2}-\d{2}:\d{2}$/')
+                            ->validationMessages([
+                                'regex' => 'Format jam harus HH:MM-HH:MM (contoh: 07:00-08:00)',
+                            ]),
+                    ])
+                    ->columns(2),
             ]);
     }
 
@@ -112,20 +102,20 @@ class ScheduleResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('teacher.name')
-                    ->label('Guru')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('subject.name')
-                    ->label('Mata Pelajaran')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('classRoom.full_name')
+                Tables\Columns\TextColumn::make('classRoom.name')
                     ->label('Kelas')
                     ->sortable()
                     ->searchable()
                     ->badge()
-                    ->color('success'),
+                    ->color('success')
+                    ->formatStateUsing(function ($record) {
+                        return $record->classRoom->full_name ?? $record->classRoom->name;
+                    }),
+                
+                Tables\Columns\TextColumn::make('subject.name')
+                    ->label('Mata Pelajaran')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('weekday')
                     ->label('Hari')
                     ->sortable()
@@ -141,6 +131,10 @@ class ScheduleResource extends Resource
                         7 => 'Minggu',
                         default => '-',
                     }),
+                Tables\Columns\TextColumn::make('teacher.name')
+                    ->label('Guru')
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('time_slot')
                     ->label('Jam Pelajaran')
                     ->sortable()

@@ -51,15 +51,6 @@ class AcademicSystemSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        Program::create([
-            'code' => 'BAHASA',
-            'name' => 'Bahasa dan Budaya',
-            'short_name' => 'Bahasa',
-            'description' => 'Program studi yang fokus pada bahasa Indonesia, bahasa asing, dan budaya',
-            'min_grade_level' => 10,
-            'is_active' => true,
-        ]);
-
         $this->command->info('Academic system data seeded successfully!');
         $this->command->info("Active Academic Year: {$currentYear->name}");
         $this->command->info('Programs: MIPA, IPS, Bahasa');

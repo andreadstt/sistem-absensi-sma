@@ -16,6 +16,30 @@ class Schedule extends Model
     ];
 
     /**
+     * Boot method to auto-create TeachingAssignment when Schedule is created.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Schedule $schedule) {
+            // Auto-create TeachingAssignment if not exists
+            TeachingAssignment::firstOrCreate([
+                'teacher_id' => $schedule->teacher_id,
+                'subject_id' => $schedule->subject_id,
+                'class_room_id' => $schedule->class_room_id,
+            ]);
+        });
+
+        static::updating(function (Schedule $schedule) {
+            // If schedule is updated, ensure TeachingAssignment exists for new combination
+            TeachingAssignment::firstOrCreate([
+                'teacher_id' => $schedule->teacher_id,
+                'subject_id' => $schedule->subject_id,
+                'class_room_id' => $schedule->class_room_id,
+            ]);
+        });
+    }
+
+    /**
      * Get the teacher for this schedule.
      */
     public function teacher(): BelongsTo

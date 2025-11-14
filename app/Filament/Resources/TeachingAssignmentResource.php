@@ -29,6 +29,9 @@ class TeachingAssignmentResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    // Hide from navigation - assignments are now created automatically via Schedules
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function form(Form $form): Form
     {
         return $form

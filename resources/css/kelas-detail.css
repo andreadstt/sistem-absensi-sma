@@ -1,0 +1,288 @@
+/* Class Detail Page - Minimal & Clean Styles */
+
+/* Page Layout - menggunakan Tailwind untuk sisanya */
+.kelas-detail-page {
+    background: transparent;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+/* Info Card */
+.info-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.icon-box {
+    width: 48px;
+    height: 48px;
+    background: #667eea;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.stat-mini {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Attendance Table */
+.attendance-table-container {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.attendance-table-header {
+    padding: 16px 20px;
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.attendance-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.attendance-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.attendance-table th {
+    padding: 12px 16px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.attendance-table tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.15s;
+}
+
+.attendance-table tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.attendance-table td {
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* Sticky Columns for horizontal scroll */
+.sticky-col {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 5;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+    min-width: 60px;
+}
+
+.sticky-col-name {
+    position: sticky;
+    left: 60px;
+    background: white;
+    z-index: 5;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+    min-width: 200px;
+    text-align: left !important;
+}
+
+.attendance-table thead .sticky-col,
+.attendance-table thead .sticky-col-name {
+    background: #667eea;
+    z-index: 15;
+}
+
+/* Status Badges - clickable buttons in table */
+.status-badge-hadir,
+.status-badge-sakit,
+.status-badge-izin,
+.status-badge-alfa,
+.status-badge-empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 16px;
+    transition: all 0.15s;
+    border: 2px solid transparent;
+}
+
+.status-badge-hadir {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+    cursor: pointer;
+}
+
+.status-badge-hadir:hover {
+    background: #bbf7d0;
+    transform: scale(1.05);
+}
+
+.status-badge-sakit {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #bfdbfe;
+    cursor: pointer;
+}
+
+.status-badge-sakit:hover {
+    background: #bfdbfe;
+    transform: scale(1.05);
+}
+
+.status-badge-izin {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+    cursor: pointer;
+}
+
+.status-badge-izin:hover {
+    background: #fde68a;
+    transform: scale(1.05);
+}
+
+.status-badge-alfa {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+    cursor: pointer;
+}
+
+.status-badge-alfa:hover {
+    background: #fecaca;
+    transform: scale(1.05);
+}
+
+.status-badge-empty {
+    color: #d1d5db;
+    cursor: default;
+}
+
+/* Buttons - hanya yang tidak ada di DaisyUI */
+.btn-formal {
+    background: #667eea;
+    color: white;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.btn-formal:hover {
+    background: #5568d3;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Alert Messages */
+.alert-message {
+    padding: 16px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    margin-bottom: 24px;
+}
+
+.alert-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+    border: 2px dashed #d1d5db;
+}
+
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state-icon svg {
+    width: 40px;
+    height: 40px;
+    color: #9ca3af;
+}
+
+/* Scrollbar customization */
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}

@@ -91,7 +91,7 @@ class StudentResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('classRoom.full_name')
                     ->label('Kelas')
-                    ->sortable()
+                    ->sortable(false)
                     ->searchable()
                     ->badge()
                     ->color('success'),
@@ -151,6 +151,7 @@ class StudentResource extends Resource
         return [
             'index' => Pages\ListStudents::route('/'),
             'create' => Pages\CreateStudent::route('/create'),
+            'bulk-create' => Pages\BulkCreateStudent::route('/bulk-create'),
             'edit' => Pages\EditStudent::route('/{record}/edit'),
         ];
     }

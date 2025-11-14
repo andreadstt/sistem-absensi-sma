@@ -1,4 +1,6 @@
 import '../css/app.css';
+import '../css/guru-portal.css';
+import '../css/kelas-detail.css';
 import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/vue3';

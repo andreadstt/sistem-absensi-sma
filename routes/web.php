@@ -72,8 +72,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', GuruMiddleware::class])->prefix('guru')->group(function () {
     Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('guru.dashboard');
     Route::get('/kelas/{classRoom}', [\App\Http\Controllers\Guru\KelasController::class, 'show'])->name('guru.kelas.show');
+    Route::get('/kelas/{classRoom}/export', [\App\Http\Controllers\Guru\KelasController::class, 'export'])->name('guru.kelas.export');
     Route::get('/absensi/{classRoom}/{subject}/{date}', [AbsensiController::class, 'show'])->name('guru.absensi.show');
     Route::post('/absensi', [AbsensiController::class, 'store'])->name('guru.absensi.store');
+    Route::post('/attendance/update', [\App\Http\Controllers\Guru\KelasController::class, 'updateAttendance'])->name('guru.attendance.update');
 });
 
 require __DIR__ . '/auth.php';

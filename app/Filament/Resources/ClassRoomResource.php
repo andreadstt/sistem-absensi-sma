@@ -60,13 +60,13 @@ class ClassRoomResource extends Resource
                     ->required()
                     ->reactive(),
                 Forms\Components\TextInput::make('section')
-                    ->label('Rombel (A, B, C, ...)')
-                    ->placeholder('A')
+                    ->label('Kelas (1, 2, 3, ...)')
+                    ->placeholder('1')
                     ->maxLength(10)
                     ->required(),
                 Forms\Components\TextInput::make('name')
                     ->label('Nama Kelas (opsional)')
-                    ->helperText('Kosongkan untuk generate otomatis dari tingkat + program + rombel')
+                    ->helperText('Kosongkan untuk generate otomatis dari tingkat + program + kelas')
                     ->maxLength(255),
             ]);
     }

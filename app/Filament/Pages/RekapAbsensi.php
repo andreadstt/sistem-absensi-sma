@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Attendance;
 use App\Models\ClassRoom;
 use App\Models\Student;
+use App\Models\AcademicYear;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -41,11 +42,14 @@ class RekapAbsensi extends Page implements HasForms, HasTable
 
     public function mount(): void
     {
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        
         $this->form->fill([
             'class_room_id' => null,
             'date' => now()->format('Y-m-d'),
             'export_type' => 'daily',
             'semester' => null,
+            'year' => $activeYear ? $activeYear->name : now()->year,
         ]);
     }
 
@@ -82,6 +86,20 @@ class RekapAbsensi extends Page implements HasForms, HasTable
                     ->default(now())
                     ->live()
                     ->visible(fn($get) => $get('export_type') === 'daily'),
+                Select::make('year')
+                    ->label('Tahun Ajaran')
+                    ->options(function () {
+                        return AcademicYear::orderBy('start_year', 'desc')
+                            ->get()
+                            ->pluck('name', 'name');
+                    })
+                    ->default(function () {
+                        $activeYear = AcademicYear::where('is_active', true)->first();
+                        return $activeYear ? $activeYear->name : null;
+                    })
+                    ->required()
+                    ->live()
+                    ->visible(fn($get) => $get('export_type') === 'semester'),
                 Select::make('semester')
                     ->label('Semester')
                     ->options([
@@ -119,6 +137,7 @@ class RekapAbsensi extends Page implements HasForms, HasTable
                         'M' => 'Laki-laki',
                         'F' => 'Perempuan',
                     }),
+                // Columns for daily view
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -135,13 +154,62 @@ class RekapAbsensi extends Page implements HasForms, HasTable
                         'IZIN' => 'I',
                         'ALFA' => 'A',
                         default => '-',
-                    }),
+                    })
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'daily'),
                 TextColumn::make('subject_name')
                     ->label('Mata Pelajaran')
-                    ->default('-'),
+                    ->default('-')
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'daily'),
                 TextColumn::make('teacher_name')
                     ->label('Guru')
-                    ->default('-'),
+                    ->default('-')
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'daily'),
+                // Columns for semester view
+                TextColumn::make('total_days')
+                    ->label('Total Hari')
+                    ->default(0)
+                    ->sortable()
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'semester'),
+                TextColumn::make('hadir')
+                    ->label('Hadir (H)')
+                    ->default(0)
+                    ->badge()
+                    ->color('success')
+                    ->sortable()
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'semester'),
+                TextColumn::make('sakit')
+                    ->label('Sakit (S)')
+                    ->default(0)
+                    ->badge()
+                    ->color('warning')
+                    ->sortable()
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'semester'),
+                TextColumn::make('izin')
+                    ->label('Izin (I)')
+                    ->default(0)
+                    ->badge()
+                    ->color('info')
+                    ->sortable()
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'semester'),
+                TextColumn::make('alfa')
+                    ->label('Alfa (A)')
+                    ->default(0)
+                    ->badge()
+                    ->color('danger')
+                    ->sortable()
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'semester'),
+                TextColumn::make('percentage')
+                    ->label('% Kehadiran')
+                    ->default('0%')
+                    ->badge()
+                    ->sortable()
+                    ->color(function (?string $state): string {
+                        $pct = (float) str_replace('%', '', $state ?? '0');
+                        if ($pct >= 90) return 'success';
+                        if ($pct >= 75) return 'warning';
+                        return 'danger';
+                    })
+                    ->visible(fn() => ($this->data['export_type'] ?? 'daily') === 'semester'),
             ])
             ->headerActions([
                 Action::make('export')
@@ -157,7 +225,7 @@ class RekapAbsensi extends Page implements HasForms, HasTable
                         if ($exportType === 'daily') {
                             return empty($this->data['date']);
                         }
-                        return empty($this->data['semester']);
+                        return empty($this->data['semester']) || empty($this->data['year']);
                     }),
             ])
             ->paginated(false);
@@ -176,7 +244,11 @@ class RekapAbsensi extends Page implements HasForms, HasTable
             return $this->getDailyTableQuery();
         }
 
-        // For semester view - show empty by default, data will be in export
+        // For semester view - show statistics in table
+        if ($exportType === 'semester' && !empty($this->data['semester']) && !empty($this->data['year'])) {
+            return $this->getSemesterTableQuery();
+        }
+
         return Student::query()->whereRaw('1 = 0');
     }
 
@@ -207,6 +279,110 @@ class RekapAbsensi extends Page implements HasForms, HasTable
         return Student::query()
             ->whereIn('id', $studentIds)
             ->where('class_room_id', $classRoomId);
+    }
+
+    protected function getSemesterTableQuery(): Builder
+    {
+        $classRoomId = $this->data['class_room_id'];
+        $semester = $this->data['semester'];
+        $yearName = $this->data['year'] ?? null; // e.g., "2025/2026"
+        
+        if (!$yearName) {
+            return Student::query()->whereRaw('1 = 0');
+        }
+
+        // Get academic year from database
+        $academicYear = AcademicYear::where('name', $yearName)->first();
+        
+        if (!$academicYear) {
+            return Student::query()->whereRaw('1 = 0');
+        }
+
+        // Determine semester date range based on academic year
+        if ($semester == '1') {
+            // Semester 1: Juli - Desember
+            $startDate = "{$academicYear->start_year}-07-01";
+            $endDate = "{$academicYear->start_year}-12-31";
+        } else {
+            // Semester 2: Januari - Juni
+            $startDate = "{$academicYear->end_year}-01-01";
+            $endDate = "{$academicYear->end_year}-06-30";
+        }
+
+        // Return query with calculated attributes
+        return Student::query()
+            ->where('class_room_id', $classRoomId)
+            ->select('students.*')
+            ->selectRaw('
+                (SELECT COUNT(*) FROM attendances 
+                 WHERE attendances.student_id = students.id 
+                 AND attendances.class_room_id = ? 
+                 AND attendances.date BETWEEN ? AND ?) as total_days',
+                [$classRoomId, $startDate, $endDate]
+            )
+            ->selectRaw('
+                (SELECT COUNT(*) FROM attendances 
+                 WHERE attendances.student_id = students.id 
+                 AND attendances.class_room_id = ? 
+                 AND attendances.date BETWEEN ? AND ?
+                 AND attendances.status = "HADIR") as hadir',
+                [$classRoomId, $startDate, $endDate]
+            )
+            ->selectRaw('
+                (SELECT COUNT(*) FROM attendances 
+                 WHERE attendances.student_id = students.id 
+                 AND attendances.class_room_id = ? 
+                 AND attendances.date BETWEEN ? AND ?
+                 AND attendances.status = "SAKIT") as sakit',
+                [$classRoomId, $startDate, $endDate]
+            )
+            ->selectRaw('
+                (SELECT COUNT(*) FROM attendances 
+                 WHERE attendances.student_id = students.id 
+                 AND attendances.class_room_id = ? 
+                 AND attendances.date BETWEEN ? AND ?
+                 AND attendances.status = "IZIN") as izin',
+                [$classRoomId, $startDate, $endDate]
+            )
+            ->selectRaw('
+                (SELECT COUNT(*) FROM attendances 
+                 WHERE attendances.student_id = students.id 
+                 AND attendances.class_room_id = ? 
+                 AND attendances.date BETWEEN ? AND ?
+                 AND attendances.status = "ALFA") as alfa',
+                [$classRoomId, $startDate, $endDate]
+            )
+            ->selectRaw('
+                CONCAT(
+                    ROUND(
+                        CASE 
+                            WHEN (SELECT COUNT(*) FROM attendances 
+                                  WHERE attendances.student_id = students.id 
+                                  AND attendances.class_room_id = ? 
+                                  AND attendances.date BETWEEN ? AND ?) > 0
+                            THEN (
+                                (SELECT COUNT(*) FROM attendances 
+                                 WHERE attendances.student_id = students.id 
+                                 AND attendances.class_room_id = ? 
+                                 AND attendances.date BETWEEN ? AND ?
+                                 AND attendances.status = "HADIR") * 100.0 / 
+                                (SELECT COUNT(*) FROM attendances 
+                                 WHERE attendances.student_id = students.id 
+                                 AND attendances.class_room_id = ? 
+                                 AND attendances.date BETWEEN ? AND ?)
+                            )
+                            ELSE 0
+                        END, 
+                        2
+                    ), 
+                    "%"
+                ) as percentage',
+                [
+                    $classRoomId, $startDate, $endDate,
+                    $classRoomId, $startDate, $endDate,
+                    $classRoomId, $startDate, $endDate
+                ]
+            );
     }
 
     public function exportToCSV()
@@ -277,19 +453,26 @@ class RekapAbsensi extends Page implements HasForms, HasTable
 
         $classRoom = ClassRoom::find($this->data['class_room_id']);
         $semester = $this->data['semester'];
-        $year = now()->year;
+        $yearName = $this->data['year'] ?? null;
+
+        // Get academic year from database
+        $academicYear = AcademicYear::where('name', $yearName)->first();
+        
+        if (!$academicYear) {
+            return;
+        }
 
         // Determine semester date range
         if ($semester == '1') {
             // Semester 1: Juli - Desember
-            $startDate = "{$year}-07-01";
-            $endDate = "{$year}-12-31";
-            $semesterLabel = "Semester 1 ({$year})";
+            $startDate = "{$academicYear->start_year}-07-01";
+            $endDate = "{$academicYear->start_year}-12-31";
+            $semesterLabel = "Semester 1 ({$academicYear->name})";
         } else {
             // Semester 2: Januari - Juni
-            $startDate = "{$year}-01-01";
-            $endDate = "{$year}-06-30";
-            $semesterLabel = "Semester 2 ({$year})";
+            $startDate = "{$academicYear->end_year}-01-01";
+            $endDate = "{$academicYear->end_year}-06-30";
+            $semesterLabel = "Semester 2 ({$academicYear->name})";
         }
 
         $students = Student::where('class_room_id', $this->data['class_room_id'])->get();
@@ -322,7 +505,17 @@ class RekapAbsensi extends Page implements HasForms, HasTable
         // Generate CSV content
         $csv = "REKAP ABSENSI {$semesterLabel}\n";
         $csv .= "Kelas: {$classRoom->name}\n";
-        $csv .= "Periode: {$startDate} s/d {$endDate}\n\n";
+        $csv .= "Periode: {$startDate} s/d {$endDate}\n";
+        
+        // Add summary statistics
+        $totalRecords = collect($studentStats)->sum('total_days');
+        $totalHadir = collect($studentStats)->sum('hadir');
+        $avgPercentage = collect($studentStats)->avg('percentage');
+        
+        $csv .= "Total Rekaman Absensi: {$totalRecords}\n";
+        $csv .= "Total Kehadiran: {$totalHadir}\n";
+        $csv .= "Rata-rata Kehadiran: " . round($avgPercentage, 2) . "%\n\n";
+        
         $csv .= "NIS,Nama Siswa,Jenis Kelamin,Total Hari,Hadir (H),Sakit (S),Izin (I),Alfa (A),Persentase Kehadiran\n";
 
         foreach ($studentStats as $stats) {
@@ -339,7 +532,8 @@ class RekapAbsensi extends Page implements HasForms, HasTable
             ]) . "\n";
         }
 
-        $filename = "absensi_semester_{$classRoom->name}_semester{$semester}_{$year}.csv";
+        $filename = "absensi_semester_{$classRoom->name}_semester{$semester}_{$academicYear->name}.csv";
+        $filename = str_replace('/', '-', $filename); // Replace / with - for filename safety
 
         return response()->streamDownload(function () use ($csv) {
             echo $csv;

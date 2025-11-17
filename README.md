@@ -1,5 +1,4 @@
 #  Sistem Absensi SMA - Portal Guru & Admin
-## How To run
 
 
 ### 1: Clone Repo

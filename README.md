@@ -3,7 +3,7 @@
 
 ### 1: Clone Repo
 ```bash
-git clone https://github.com/username/sistem-absensi-sma.git
+https://github.com/andreadstt/sistem-absensi-sma
 cd sistem-absensi-sma
 ```
 

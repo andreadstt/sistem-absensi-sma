@@ -28,7 +28,6 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center text-sm text-gray-600">
-            <p>© 2025 @drestz. All rights reserved.</p>
         </div>
     </div>
 </template>

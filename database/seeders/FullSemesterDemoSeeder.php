@@ -31,7 +31,10 @@ class FullSemesterDemoSeeder extends Seeder
         // 1. Setup Academic Year 2025/2026
         $this->seedAcademicYear();
         
-        // 2. Create Demo Teacher (andreadst@gmail.com)
+        // 2. Create Admin Account
+        $this->seedAdminAccount();
+        
+        // 3. Create Demo Teacher (andreadst@gmail.com)
         $teacher = $this->seedDemoTeacher();
         
         // 3. Create Additional Teachers
@@ -58,6 +61,10 @@ class FullSemesterDemoSeeder extends Seeder
         
         $this->command->info('✅ Full Semester Demo Seeder completed successfully!');
         $this->command->newLine();
+        $this->command->info('📧 Admin Account:');
+        $this->command->info('   Email: admin@gmail.com');
+        $this->command->info('   Password: password');
+        $this->command->newLine();
         $this->command->info('📧 Demo Teacher Account:');
         $this->command->info('   Email: andreadst@gmail.com');
         $this->command->info('   Password: password');
@@ -83,6 +90,27 @@ class FullSemesterDemoSeeder extends Seeder
         );
         
         $this->command->info("   ✓ Academic Year: {$academicYear->name} (Active)");
+    }
+
+    private function seedAdminAccount()
+    {
+        $this->command->info('👨‍💼 Creating Admin Account...');
+        
+        // Create or update admin user
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name' => 'Administrator',
+                'password' => Hash::make('password'),
+            ]
+        );
+        
+        // Assign admin role
+        $admin->assignRole('admin');
+        
+        $this->command->info('   ✓ Admin: Administrator (admin@gmail.com)');
+        
+        return $admin;
     }
 
     private function seedDemoTeacher()

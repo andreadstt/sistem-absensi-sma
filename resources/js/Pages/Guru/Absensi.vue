@@ -82,14 +82,15 @@ const getStatusBadgeClass = (status) => {
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-7 h-7">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span class="text-base font-semibold">Attendance has already been recorded for this class. Viewing mode only.</span>
+                    <span class="text-base font-semibold">Absensi hari ini sudah disimpan pada database. <br>Kembali ke dashboard dan buka detail kelas untuk edit absensi jika anda melakukan kesalahan input.</span>
+                    
                 </div>
 
                 <!-- Attendance Form -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-bold text-gray-900">
+                            <h3 class="text-2xl font-bold text-gray-900">
                                 Student List ({{ students.length }} students)
                             </h3>
                             <button
@@ -107,20 +108,22 @@ const getStatusBadgeClass = (status) => {
                             <div
                                 v-for="(student, index) in students"
                                 :key="student.id"
-                                class="card bg-base-100 border-2 border-gray-300"
+                                class="card bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow duration-200"
                             >
-                                <div class="card-body p-4">
+                                <div class="card-body p-5">
                                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                         <!-- Student Info -->
                                         <div class="flex items-center gap-3">
-                                            <div class="avatar placeholder">
-                                                <div class="bg-neutral text-neutral-content rounded-full w-14">
-                                                    <span class="text-2xl font-bold">{{ student.name.charAt(0) }}</span>
+                                            <div class="avatar">
+                                                <div class="w-14 rounded-full bg-gray-200 flex items-center justify-center">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                    </svg>
                                                 </div>
                                             </div>
                                             <div>
-                                                <h4 class="font-bold text-gray-900 text-lg">{{ student.name }}</h4>
-                                                <p class="text-base text-gray-600 font-semibold">NIS: {{ student.nis }}</p>
+                                                <h4 class="font-bold text-gray-900 text-xl">{{ student.name }}</h4>
+                                                <p class="text-sm text-gray-500 font-medium">NIS: {{ student.nis }}</p>
                                             </div>
                                             <div class="badge badge-lg font-bold text-sm" :class="student.gender === 'M' ? 'badge-info' : 'badge-success'">
                                                 {{ student.gender === 'M' ? 'Male' : 'Female' }}
@@ -129,45 +132,45 @@ const getStatusBadgeClass = (status) => {
 
                                         <!-- Status Radio Buttons or Badge -->
                                         <div v-if="!isReadOnly" class="flex flex-wrap gap-3">
-                                            <label class="cursor-pointer flex items-center gap-2 py-2 px-3 rounded-lg border-2 hover:bg-green-50 transition-colors" :class="form.attendances[index].status === 'HADIR' ? 'border-green-500 bg-green-50' : 'border-gray-300'">
+                                            <label class="cursor-pointer flex items-center gap-2 py-2.5 px-4 rounded-lg border-2 hover:bg-green-50 transition-all duration-150" :class="form.attendances[index].status === 'HADIR' ? 'border-green-600 bg-green-50 shadow-sm' : 'border-gray-300 bg-white'">
                                                 <input
                                                     type="radio"
                                                     :name="`status-${student.id}`"
                                                     value="HADIR"
                                                     v-model="form.attendances[index].status"
-                                                    class="radio radio-success"
+                                                    class="radio radio-success radio-sm"
                                                 />
-                                                <span class="font-bold text-base">Hadir</span>
+                                                <span class="font-semibold text-base text-gray-900">Hadir</span>
                                             </label>
-                                            <label class="cursor-pointer flex items-center gap-2 py-2 px-3 rounded-lg border-2 hover:bg-yellow-50 transition-colors" :class="form.attendances[index].status === 'SAKIT' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-300'">
+                                            <label class="cursor-pointer flex items-center gap-2 py-2.5 px-4 rounded-lg border-2 hover:bg-yellow-50 transition-all duration-150" :class="form.attendances[index].status === 'SAKIT' ? 'border-yellow-600 bg-yellow-50 shadow-sm' : 'border-gray-300 bg-white'">
                                                 <input
                                                     type="radio"
                                                     :name="`status-${student.id}`"
                                                     value="SAKIT"
                                                     v-model="form.attendances[index].status"
-                                                    class="radio radio-warning"
+                                                    class="radio radio-warning radio-sm"
                                                 />
-                                                <span class="font-bold text-base">Sakit</span>
+                                                <span class="font-semibold text-base text-gray-900">Sakit</span>
                                             </label>
-                                            <label class="cursor-pointer flex items-center gap-2 py-2 px-3 rounded-lg border-2 hover:bg-blue-50 transition-colors" :class="form.attendances[index].status === 'IZIN' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
+                                            <label class="cursor-pointer flex items-center gap-2 py-2.5 px-4 rounded-lg border-2 hover:bg-blue-50 transition-all duration-150" :class="form.attendances[index].status === 'IZIN' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-300 bg-white'">
                                                 <input
                                                     type="radio"
                                                     :name="`status-${student.id}`"
                                                     value="IZIN"
                                                     v-model="form.attendances[index].status"
-                                                    class="radio radio-info"
+                                                    class="radio radio-info radio-sm"
                                                 />
-                                                <span class="font-bold text-base">Izin</span>
+                                                <span class="font-semibold text-base text-gray-900">Izin</span>
                                             </label>
-                                            <label class="cursor-pointer flex items-center gap-2 py-2 px-3 rounded-lg border-2 hover:bg-red-50 transition-colors" :class="form.attendances[index].status === 'ALFA' ? 'border-red-500 bg-red-50' : 'border-gray-300'">
+                                            <label class="cursor-pointer flex items-center gap-2 py-2.5 px-4 rounded-lg border-2 hover:bg-red-50 transition-all duration-150" :class="form.attendances[index].status === 'ALFA' ? 'border-red-600 bg-red-50 shadow-sm' : 'border-gray-300 bg-white'">
                                                 <input
                                                     type="radio"
                                                     :name="`status-${student.id}`"
                                                     value="ALFA"
                                                     v-model="form.attendances[index].status"
-                                                    class="radio radio-error"
+                                                    class="radio radio-error radio-sm"
                                                 />
-                                                <span class="font-bold text-base">Alfa</span>
+                                                <span class="font-semibold text-base text-gray-900">Alfa</span>
                                             </label>
                                         </div>
                                         <div v-else>
@@ -181,24 +184,23 @@ const getStatusBadgeClass = (status) => {
                         </div>
 
                         <!-- Submit Button -->
-                                                <!-- Submit Button -->
-                        <div v-if="!isReadOnly" class="mt-6 flex gap-4">
+                        <div v-if="!isReadOnly" class="mt-8 flex gap-4">
                             <button
                                 type="button"
                                 @click="submit"
                                 :disabled="form.processing"
-                                class="btn btn-primary btn-lg flex-1 font-bold text-lg"
+                                class="btn btn-primary btn-lg flex-1 font-bold text-lg shadow-lg hover:shadow-xl transition-all text-black"
                             >
                                 <svg v-if="!form.processing" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 <span v-if="form.processing" class="loading loading-spinner"></span>
-                                {{ form.processing ? 'Saving...' : 'Save Attendance' }}
+                                {{ form.processing ? 'Saving...' : 'Simpan Absensi' }}
                             </button>
                             <button
                                 type="button"
                                 @click="$inertia.visit(route('guru.dashboard'))"
-                                class="btn btn-outline btn-lg font-bold text-lg"
+                                class="btn btn-outline btn-lg font-bold text-lg border-2 hover:bg-gray-100 text-gray-900"
                             >
                                 Cancel
                             </button>

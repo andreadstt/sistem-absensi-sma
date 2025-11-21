@@ -63,6 +63,33 @@
     overflow-y: auto;
 }
 
+/* Custom Scrollbar - More Visible */
+.table-wrapper::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+    border: 2px solid #f1f1f1;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
+}
+
+/* Firefox scrollbar */
+.table-wrapper {
+    scrollbar-width: auto;
+    scrollbar-color: #667eea #f1f1f1;
+}
+
 .attendance-table {
     width: 100%;
     border-collapse: separate;

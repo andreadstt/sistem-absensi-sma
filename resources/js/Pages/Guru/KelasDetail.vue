@@ -158,8 +158,8 @@ const updateAttendance = () => {
                             </svg>
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900">Attendance Overview</h3>
-                            <p class="text-sm text-gray-600">Click on any status badge to edit attendance</p>
+                            <h3 class="text-lg font-bold text-gray-900">Rekap Absensi Siswa</h3>
+                            <p class="text-sm text-gray-600">Click ikon pada tanggal yang ingin anda edit</p>
                         </div>
                     </div>
                     <a 
@@ -175,16 +175,16 @@ const updateAttendance = () => {
                 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div class="stat-mini">
-                        <span class="status-badge-hadir text-xs">✓ HADIR</span>
+                        <span class="status-badge-hadir text-xs">✓ = HADIR</span>
                     </div>
                     <div class="stat-mini">
-                        <span class="status-badge-sakit text-xs">S SAKIT</span>
+                        <span class="status-badge-sakit text-xs">S = SAKIT</span>
                     </div>
                     <div class="stat-mini">
-                        <span class="status-badge-izin text-xs">I IZIN</span>
+                        <span class="status-badge-izin text-xs">I = IZIN</span>
                     </div>
                     <div class="stat-mini">
-                        <span class="status-badge-alfa text-xs">✗ ALFA</span>
+                        <span class="status-badge-alfa text-xs">✗ = ALFA</span>
                     </div>
                 </div>
             </div>
@@ -200,19 +200,19 @@ const updateAttendance = () => {
                     <table class="attendance-table">
                         <thead>
                             <tr>
-                                <th class="sticky-col">No</th>
-                                <th class="sticky-col-name">Nama Siswa</th>
-                                <th v-for="date in attendanceDates" :key="date">
+                                <th class="sticky-col text-white">No</th>
+                                <th class="sticky-col-name text-white">Nama Siswa</th>
+                                <th v-for="date in attendanceDates" :key="date" class="text-white">
                                     {{ formatDate(date) }}
                                 </th>
-                                <th class="text-center">JUMLAH HADIR</th>
+                                <th class="text-center text-white">JUMLAH HADIR</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(student, index) in students" :key="student.id">
-                                <td class="sticky-col text-center font-bold">{{ index + 1 }}</td>
-                                <td class="sticky-col-name font-semibold">{{ student.name }}</td>
-                                <td v-for="date in attendanceDates" :key="date" class="text-center">
+                                <td class="sticky-col text-center font-bold text-gray-900">{{ index + 1 }}</td>
+                                <td class="sticky-col-name font-semibold text-gray-900">{{ student.name }}</td>
+                                <td v-for="date in attendanceDates" :key="date" class="text-center text-gray-900">
                                     <button
                                         v-if="student.attendances[date]"
                                         @click="openEditModal(student, date)"
@@ -226,8 +226,8 @@ const updateAttendance = () => {
                                     </button>
                                     <span v-else class="status-badge-empty">-</span>
                                 </td>
-                                <td class="text-center">
-                                    <span class="font-bold text-lg text-indigo-600">
+                                <td class="text-center text-gray-900">
+                                    <span class="font-bold text-lg">
                                         {{ Object.values(student.attendances).filter(status => status === 'HADIR').length }}
                                     </span>
                                 </td>
@@ -251,22 +251,22 @@ const updateAttendance = () => {
         <!-- Edit Attendance Modal - Using DaisyUI -->
         <input type="checkbox" v-model="showEditModal" class="modal-toggle" />
         <div class="modal" role="dialog">
-            <div class="modal-box max-w-md">
-                <h3 class="font-bold text-lg mb-4">Edit Attendance Status</h3>
+            <div class="modal-box max-w-md bg-gray-900 text-white">
+                <h3 class="font-bold text-lg mb-4 text-white">Edit Attendance Status</h3>
                 
                 <!-- Student Info -->
-                <div class="bg-base-200 rounded-lg p-4 mb-4 space-y-2">
+                <div class="bg-gray-800 rounded-lg p-4 mb-4 space-y-2">
                     <div class="flex justify-between">
-                        <span class="text-gray-600">Student:</span>
-                        <span class="font-semibold">{{ editingAttendance.studentName }}</span>
+                        <span class="text-gray-300">Student:</span>
+                        <span class="font-semibold text-white">{{ editingAttendance.studentName }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-gray-600">Date:</span>
-                        <span class="font-semibold">{{ formatFullDate(editingAttendance.date) }}</span>
+                        <span class="text-gray-300">Date:</span>
+                        <span class="font-semibold text-white">{{ formatFullDate(editingAttendance.date) }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-600">Current:</span>
-                        <span :class="`badge ${editingAttendance.currentStatus === 'HADIR' ? 'badge-success' : editingAttendance.currentStatus === 'SAKIT' ? 'badge-info' : editingAttendance.currentStatus === 'IZIN' ? 'badge-warning' : 'badge-error'} font-semibold`">
+                        <span class="text-gray-300">Current:</span>
+                        <span :class="`badge font-semibold text-white ${editingAttendance.currentStatus === 'HADIR' ? 'badge-success' : editingAttendance.currentStatus === 'SAKIT' ? 'badge-info' : editingAttendance.currentStatus === 'IZIN' ? 'badge-warning' : 'badge-error'}`">
                             {{ editingAttendance.currentStatus }}
                         </span>
                     </div>
@@ -274,38 +274,38 @@ const updateAttendance = () => {
 
                 <!-- Status Selection -->
                 <div class="mb-6">
-                    <label class="text-sm font-semibold text-gray-700 mb-3 block">Select New Status:</label>
+                    <label class="text-sm font-semibold text-gray-200 mb-3 block">Select New Status:</label>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="cursor-pointer">
                             <input type="radio" v-model="editingAttendance.newStatus" value="HADIR" class="hidden peer" />
-                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-green-500 peer-checked:bg-green-50 hover:border-green-400">
+                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-green-500 peer-checked:bg-green-50 hover:border-green-400 text-white peer-checked:text-gray-900">
                                 <div class="text-2xl mb-1">✓</div>
                                 <div class="font-semibold text-sm">HADIR</div>
-                                <div class="text-xs text-gray-500">Present</div>
+                            
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" v-model="editingAttendance.newStatus" value="SAKIT" class="hidden peer" />
-                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-blue-400">
+                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-blue-400 text-white peer-checked:text-gray-900">
                                 <div class="text-2xl mb-1 font-bold">S</div>
                                 <div class="font-semibold text-sm">SAKIT</div>
-                                <div class="text-xs text-gray-500">Sick</div>
+                            
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" v-model="editingAttendance.newStatus" value="IZIN" class="hidden peer" />
-                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-yellow-500 peer-checked:bg-yellow-50 hover:border-yellow-400">
+                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-yellow-500 peer-checked:bg-yellow-50 hover:border-yellow-400 text-white peer-checked:text-gray-900">
                                 <div class="text-2xl mb-1 font-bold">I</div>
                                 <div class="font-semibold text-sm">IZIN</div>
-                                <div class="text-xs text-gray-500">Permission</div>
+                        
                             </div>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" v-model="editingAttendance.newStatus" value="ALFA" class="hidden peer" />
-                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-red-500 peer-checked:bg-red-50 hover:border-red-400">
+                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center transition-all peer-checked:border-red-500 peer-checked:bg-red-50 hover:border-red-400 text-white peer-checked:text-gray-900">
                                 <div class="text-2xl mb-1">✗</div>
                                 <div class="font-semibold text-sm">ALFA</div>
-                                <div class="text-xs text-gray-500">Absent</div>
+                    
                             </div>
                         </label>
                     </div>
@@ -313,8 +313,8 @@ const updateAttendance = () => {
 
                 <!-- Actions -->
                 <div class="modal-action">
-                    <button @click="closeEditModal" class="btn btn-ghost">Cancel</button>
-                    <button @click="updateAttendance" class="btn btn-primary">
+                    <button @click="closeEditModal" class="btn btn-ghost text-white">Cancel</button>
+                    <button @click="updateAttendance" class="btn btn-primary text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>

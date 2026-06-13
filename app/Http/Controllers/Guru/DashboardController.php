@@ -72,6 +72,7 @@ class DashboardController extends Controller
                             'day' => $dayName,
                             'time_slot' => $schedule->time_slot,
                             'subject_name' => $schedule->subject->name ?? '-',
+                            'subject_id' => $schedule->subject_id,
                         ];
                     });
                 
@@ -110,6 +111,73 @@ class DashboardController extends Controller
             ],
             'today' => now()->format('l, F j, Y'),
             'teacherName' => $teacher->name,
+        ]);
+    }
+
+    public function rekapAbsen(Request $request)
+    {
+        $user = $request->user();
+
+        // Get teacher record for the authenticated user
+        $teacher = $user->teacher;
+
+        if (!$teacher) {
+            return Inertia::render('Guru/RekapAbsen', [
+                'myClasses' => [],
+            ]);
+        }
+
+        // Get all teaching assignments with class info
+        $myClasses = \App\Models\TeachingAssignment::where('teacher_id', $teacher->id)
+            ->with(['classRoom.academicYear', 'classRoom.program', 'subject', 'classRoom.students'])
+            ->get()
+            ->groupBy('class_room_id')
+            ->map(function ($assignments, $classRoomId) use ($teacher) {
+                $classRoom = $assignments->first()->classRoom;
+                
+                // Get schedules for this class
+                $classSchedules = Schedule::where('teacher_id', $teacher->id)
+                    ->where('class_room_id', $classRoomId)
+                    ->orderBy('weekday')
+                    ->orderBy('time_slot')
+                    ->get()
+                    ->map(function ($schedule) {
+                        $dayName = match($schedule->weekday) {
+                            1 => 'Senin',
+                            2 => 'Selasa',
+                            3 => 'Rabu',
+                            4 => 'Kamis',
+                            5 => 'Jumat',
+                            6 => 'Sabtu',
+                            7 => 'Minggu',
+                            default => '-',
+                        };
+                        return [
+                            'day' => $dayName,
+                            'time_slot' => $schedule->time_slot,
+                            'subject_name' => $schedule->subject->name ?? '-',
+                            'subject_id' => $schedule->subject_id,
+                        ];
+                    });
+                
+                return [
+                    'class_room_id' => $classRoomId,
+                    'class_name' => $classRoom->full_name ?? $classRoom->name,
+                    'student_count' => $classRoom->students->count(),
+                    'academic_year' => $classRoom->academicYear->name ?? '-',
+                    'program' => $classRoom->program->short_name ?? '-',
+                    'subjects' => $assignments->map(function ($assignment) {
+                        return [
+                            'id' => $assignment->subject_id,
+                            'name' => $assignment->subject->name,
+                        ];
+                    })->values(),
+                    'schedules' => $classSchedules,
+                ];
+            })->values();
+
+        return Inertia::render('Guru/RekapAbsen', [
+            'myClasses' => $myClasses,
         ]);
     }
 }

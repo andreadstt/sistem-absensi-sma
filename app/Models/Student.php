@@ -9,6 +9,7 @@ class Student extends Model
 {
     protected $fillable = [
         'nis',
+        'roll_number',
         'name',
         'gender',
         'class_room_id',

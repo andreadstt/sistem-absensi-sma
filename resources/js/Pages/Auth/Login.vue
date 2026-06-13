@@ -34,16 +34,16 @@ const submit = () => {
         <Head title="Log in" />
 
         <!-- Page Title -->
-        <div class="text-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">Welcome Back</h2>
-            <p class="text-sm text-gray-600 mt-1">Please sign in to your account</p>
+        <div class="text-center mb-4 sm:mb-5 md:mb-6">
+            <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Welcome Back</h2>
+            <p class="text-xs sm:text-sm text-gray-600 mt-1">Please sign in to your account</p>
         </div>
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
+        <div v-if="status" class="mb-4 text-xs sm:text-sm font-medium text-green-700 bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
             {{ status }}
         </div>
 
-        <form @submit.prevent="submit" class="space-y-5">
+        <form @submit.prevent="submit" class="space-y-4 sm:space-y-5">
             <div>
                 <InputLabel for="email" value="Email Address" />
                 <TextInput
@@ -73,23 +73,23 @@ const submit = () => {
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between text-xs sm:text-sm">
                 <label class="flex items-center cursor-pointer">
                     <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm font-medium text-gray-700">Remember me</span>
+                    <span class="ms-2 font-medium text-gray-700">Remember me</span>
                 </label>
                 
                 <Link
                     v-if="canResetPassword"
                     :href="route('password.request')"
-                    class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                    class="font-medium text-indigo-600 hover:text-indigo-800"
                 >
                     Forgot password?
                 </Link>
             </div>
 
             <PrimaryButton
-                class="w-full justify-center"
+                class="w-full justify-center text-sm sm:text-base py-2 sm:py-2.5"
                 :class="{ 'opacity-25': form.processing }"
                 :disabled="form.processing"
             >

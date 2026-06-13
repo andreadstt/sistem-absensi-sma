@@ -14,6 +14,7 @@ class Teacher extends Model
         'name',
         'phone',
         'default_password',
+        'avatar',
     ];
 
     /**
@@ -38,5 +39,13 @@ class Teacher extends Model
     public function schedules(): HasMany
     {
         return $this->hasMany(Schedule::class);
+    }
+
+    /**
+     * Get all class rooms where this teacher is the head teacher (wali kelas).
+     */
+    public function classRoomsAsHeadTeacher(): HasMany
+    {
+        return $this->hasMany(ClassRoom::class, 'head_teacher_id');
     }
 }

@@ -14,6 +14,7 @@ class ClassRoom extends Model
         'academic_year_id',
         'program_id',
         'section',
+        'head_teacher_id',
     ];
 
     /**
@@ -22,6 +23,14 @@ class ClassRoom extends Model
     public function academicYear(): BelongsTo
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    /**
+     * Get the head teacher (wali kelas) for this class room.
+     */
+    public function headTeacher(): BelongsTo
+    {
+        return $this->belongsTo(Teacher::class, 'head_teacher_id');
     }
 
     /**

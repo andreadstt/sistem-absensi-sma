@@ -4,8 +4,12 @@ namespace App\Providers;
 
 use App\Models\ClassRoom;
 use App\Models\Program;
+use App\Models\Student;
+use App\Models\Attendance;
 use App\Observers\ClassRoomObserver;
 use App\Observers\ProgramObserver;
+use App\Observers\StudentObserver;
+use App\Observers\AttendanceObserver;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,5 +33,7 @@ class AppServiceProvider extends ServiceProvider
         // Register observers
         ClassRoom::observe(ClassRoomObserver::class);
         Program::observe(ProgramObserver::class);
+        Student::observe(StudentObserver::class);
+        Attendance::observe(AttendanceObserver::class);
     }
 }

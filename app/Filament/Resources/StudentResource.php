@@ -38,6 +38,11 @@ class StudentResource extends Resource
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
+                Forms\Components\TextInput::make('roll_number')
+                    ->label('Nomor Absen')
+                    ->numeric()
+                    ->helperText('Kosongkan untuk otomatis berurut sesuai urutan penambahan')
+                    ->nullable(),
                 Forms\Components\TextInput::make('name')
                     ->label('Nama Siswa')
                     ->required()
@@ -74,6 +79,11 @@ class StudentResource extends Resource
                     ->label('NIS')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('roll_number')
+                    ->label('No. Absen')
+                    ->sortable()
+                    ->badge()
+                    ->color('info'),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Siswa')
                     ->searchable()

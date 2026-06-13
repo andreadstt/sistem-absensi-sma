@@ -68,6 +68,13 @@ class ClassRoomResource extends Resource
                     ->label('Nama Kelas (opsional)')
                     ->helperText('Kosongkan untuk generate otomatis dari tingkat + program + kelas')
                     ->maxLength(255),
+                Forms\Components\Select::make('head_teacher_id')
+                    ->label('Wali Kelas')
+                    ->relationship('headTeacher', 'name', fn(Builder $query) => $query->orderBy('name'))
+                    ->searchable()
+                    ->preload()
+                    ->nullable()
+                    ->helperText('Pilih guru yang akan menjadi wali kelas (opsional)'),
             ]);
     }
 
@@ -88,6 +95,10 @@ class ClassRoomResource extends Resource
                     ->label('Program')
                     ->badge()
                     ->color('success')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('headTeacher.name')
+                    ->label('Wali Kelas')
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('students_count')
                     ->counts('students')
@@ -152,7 +163,7 @@ class ClassRoomResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\StudentsRelationManager::class,
         ];
     }
 

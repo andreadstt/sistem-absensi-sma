@@ -1,5 +1,5 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import GuruLayout from '@/Layouts/GuruLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
@@ -45,8 +45,22 @@ const formatDate = (dateStr) => {
 const formatFullDate = (dateStr) => {
     if (!dateStr) return 'Invalid Date';
     
-    // Parse the date
-    const date = new Date(dateStr);
+    let date;
+    
+    // Handle DD/MM/YY format
+    if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{2}$/)) {
+        const [day, month, year] = dateStr.split('/').map(Number);
+        // Assume 20xx for years < 50, 19xx for years >= 50
+        const fullYear = year < 50 ? 2000 + year : 1900 + year;
+        date = new Date(fullYear, month - 1, day);
+    } else if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Handle YYYY-MM-DD format
+        date = new Date(dateStr);
+    } else {
+        // Try parsing as is
+        date = new Date(dateStr);
+    }
+    
     if (isNaN(date.getTime())) {
         console.warn('Invalid full date:', dateStr);
         return dateStr;
@@ -107,32 +121,8 @@ const updateAttendance = () => {
 <template>
     <Head :title="`Detail Kelas - ${classRoom.name}`" />
 
-    <AuthenticatedLayout>
-        <template #header>
-            <div class="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                        {{ classRoom.name }}
-                    </h2>
-                    <div class="flex flex-wrap items-center gap-2 mt-2">
-                        <span class="text-sm px-3 py-1 bg-blue-100 text-blue-700 font-semibold rounded">
-                            {{ classRoom.program }}
-                        </span>
-                        <span class="text-sm px-3 py-1 bg-purple-100 text-purple-700 font-semibold rounded">
-                            {{ classRoom.academic_year }}
-                        </span>
-                        <span class="text-sm px-3 py-1 bg-green-100 text-green-700 font-semibold rounded">
-                            {{ classRoom.student_count }} Students
-                        </span>
-                    </div>
-                </div>
-                <Link :href="route('guru.dashboard')" class="btn btn-ghost text-sm font-medium">
-                    ← Back to Dashboard
-                </Link>
-            </div>
-        </template>
-
-        <div class="kelas-detail-page">
+    <GuruLayout :title="`${classRoom.name}`">
+        <div class="space-y-6">
             <!-- Success/Error Message -->
             <div v-if="flash.success" class="alert-message alert-success">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -324,5 +314,5 @@ const updateAttendance = () => {
             </div>
             <label class="modal-backdrop" @click="closeEditModal"></label>
         </div>
-    </AuthenticatedLayout>
+    </GuruLayout>
 </template>

@@ -98,6 +98,9 @@ Aplikasi akan berjalan di: **http://127.0.0.1:8000**
 4. **Ruang Wali Kelas**: Menampilkan detail halaman berisi kelas yang dipandu.
 5. **Rekap Absensi**: Klik badge status di tabel untuk mengubah status absensi siswa
 
+#### Note:
+ - Jika data pada dashboard admin kosong, itu karena seeder pertama kali dibuat saat project dibangung dan belum di update, bisa isi sendiri
+
 
 
 ## 🔧 Troubleshooting

@@ -41,7 +41,16 @@ class TeacherAttendanceResource extends Resource
                     ->preload(),
                 Forms\Components\DatePicker::make('date')
                     ->label('Tanggal')
-                    ->required(),
+                    ->required()
+                    ->unique(
+                        table: 'teacher_attendances',
+                        column: 'date',
+                        modifyRuleUsing: fn (\Illuminate\Validation\Rules\Unique $rule, \Filament\Forms\Get $get) => $rule->where('teacher_id', $get('teacher_id')),
+                        ignoreRecord: true,
+                    )
+                    ->validationMessages([
+                        'unique' => 'Data absensi untuk guru ini pada tanggal tersebut sudah ada.',
+                    ]),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options([
@@ -60,6 +69,7 @@ class TeacherAttendanceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordAction(Tables\Actions\ViewAction::class)
             ->columns([
                 Tables\Columns\TextColumn::make('teacher.name')
                     ->label('Guru')
@@ -124,6 +134,7 @@ class TeacherAttendanceResource extends Resource
                     }),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

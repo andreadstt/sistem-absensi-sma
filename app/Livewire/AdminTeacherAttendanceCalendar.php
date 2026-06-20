@@ -23,6 +23,9 @@ class AdminTeacherAttendanceCalendar extends Component
         $now = now();
         $this->currentMonth = $now->month;
         $this->currentYear = $now->year;
+        
+        $this->selectedDate = $now->format('Y-m-d');
+        $this->showDetailModal = true;
     }
 
     public function previousMonth()
@@ -56,6 +59,8 @@ class AdminTeacherAttendanceCalendar extends Component
     {
         $this->selectedDate = $date;
         $this->showDetailModal = true;
+        
+        $this->dispatch('scrollToDetail');
     }
 
     public function closeModal()
@@ -128,12 +133,30 @@ class AdminTeacherAttendanceCalendar extends Component
         return $statuses;
     }
 
-    public function getSummaryStatsProperty()
+    public function getTodayStatsProperty()
+    {
+        $today = now()->format('Y-m-d');
+        $totalTeachers = Teacher::count();
+        
+        $todayRecords = TeacherAttendance::whereDate('date', $today)->get();
+        $totalHadir = $todayRecords->where('status', 'HADIR')->count();
+        $totalTidakHadir = $todayRecords->where('status', 'TIDAK_HADIR')->count();
+
+        return [
+            'total_guru' => $totalTeachers,
+            'total_hadir' => $totalHadir,
+            'total_tidak_hadir' => $totalTidakHadir,
+            'percentage' => $totalTeachers > 0 ? round(($totalHadir / $totalTeachers) * 100, 1) : 0,
+        ];
+    }
+
+    public function getMonthlyStatsProperty()
     {
         $attendanceData = $this->attendanceData;
         $totalHadir = 0;
         $totalTidakHadir = 0;
         $totalRecords = 0;
+        $totalTeachers = Teacher::count();
 
         foreach ($attendanceData as $records) {
             foreach ($records as $record) {
@@ -147,7 +170,7 @@ class AdminTeacherAttendanceCalendar extends Component
         }
 
         return [
-            'total_records' => $totalRecords,
+            'total_guru' => $totalTeachers,
             'total_hadir' => $totalHadir,
             'total_tidak_hadir' => $totalTidakHadir,
             'percentage' => $totalRecords > 0 ? round(($totalHadir / $totalRecords) * 100, 1) : 0,
@@ -160,7 +183,12 @@ class AdminTeacherAttendanceCalendar extends Component
             return [];
         }
 
-        $query = TeacherAttendance::with('teacher')
+        $query = TeacherAttendance::with(['teacher.schedules' => function ($q) {
+            $parsedDate = Carbon::parse($this->selectedDate);
+            $q->where('weekday', $parsedDate->dayOfWeekIso)
+              ->with(['subject', 'classRoom'])
+              ->orderBy('time_slot');
+        }])
             ->where('date', $this->selectedDate);
 
         if ($this->selectedTeacherId) {
@@ -175,7 +203,8 @@ class AdminTeacherAttendanceCalendar extends Component
         $teachers = Teacher::orderBy('name')->get();
         $attendanceData = $this->getAttendanceDataProperty();
         $calendarDays = $this->getCalendarDaysProperty();
-        $summaryStats = $this->getSummaryStatsProperty();
+        $todayStats = $this->getTodayStatsProperty();
+        $monthlyStats = $this->getMonthlyStatsProperty();
         $selectedDateDetails = $this->getSelectedDateDetailsProperty();
 
         $monthNames = [
@@ -195,7 +224,8 @@ class AdminTeacherAttendanceCalendar extends Component
             'teachers' => $teachers,
             'attendanceData' => $attendanceData,
             'calendarDays' => $calendarDays,
-            'summaryStats' => $summaryStats,
+            'todayStats' => $todayStats,
+            'monthlyStats' => $monthlyStats,
             'monthName' => $monthName,
             'selectedDateDetails' => $selectedDateDetails,
             'allDayStatuses' => $allDayStatuses,

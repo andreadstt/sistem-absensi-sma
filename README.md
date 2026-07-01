@@ -6,7 +6,7 @@
 
 ### Langkah 1: Clone Repo
 ```bash
-git clone https://github.com/username/sistem-absensi-sma.git
+git clone https://github.com/andreadstt/sistem-absensi-sma
 cd sistem-absensi-sma
 ```
 

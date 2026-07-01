@@ -2,8 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Mail\TeacherApproved;
+use App\Mail\TeacherRejected;
 use App\Filament\Resources\TeacherRegistrationResource\Pages;
-use App\Filament\Resources\TeacherRegistrationResource\RelationManagers;
 use App\Models\TeacherRegistration;
 use App\Models\User;
 use App\Models\Teacher;
@@ -13,8 +14,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -236,8 +236,16 @@ class TeacherRegistrationResource extends Resource
 
             \DB::commit();
 
-            // TODO: Send email with credentials to the teacher
-            // Mail::to($registration->email)->send(new TeacherApproved($user, $password));
+            try {
+                Mail::to($registration->email)->send(new TeacherApproved(
+                    name: $registration->name,
+                    email: $registration->email,
+                    defaultPassword: $password,
+                    loginUrl: route('login'),
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
 
             Notification::make()
                 ->title('Pendaftaran Disetujui')
@@ -258,21 +266,44 @@ class TeacherRegistrationResource extends Resource
 
     protected static function rejectRegistration(TeacherRegistration $registration, string $reason)
     {
-        $registration->update([
-            'status' => 'rejected',
-            'admin_notes' => $reason,
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-        ]);
+        try {
+            // Simpan data yang diperlukan sebelum record dihapus
+            $name = $registration->name;
+            $email = $registration->email;
 
-        // TODO: Send email notification to the applicant
-        // Mail::to($registration->email)->send(new TeacherRejected($registration, $reason));
+            // Update informasi review
+            $registration->update([
+                'status' => 'rejected',
+                'admin_notes' => $reason,
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+            ]);
 
-        Notification::make()
-            ->title('Pendaftaran Ditolak')
-            ->body("Pendaftaran dari {$registration->name} telah ditolak.")
-            ->warning()
-            ->send();
+            // Kirim email penolakan
+            Mail::to($email)->send(new TeacherRejected(
+                name: $name,
+                reason: $reason,
+                registerUrl: route('teacher.register.create'),
+            ));
+
+            // Hapus data agar email dapat digunakan kembali
+            $registration->delete();
+
+            Notification::make()
+                ->title('Pendaftaran Ditolak')
+                ->body("Pendaftaran dari {$name} telah ditolak dan email pemberitahuan berhasil dikirim.")
+                ->warning()
+                ->send();
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            Notification::make()
+                ->title('Terjadi Kesalahan')
+                ->body('Gagal mengirim email penolakan: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        };
     }
 
     public static function getRelations(): array

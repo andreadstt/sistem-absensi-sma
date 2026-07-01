@@ -1,20 +1,22 @@
 <script setup>
 import Checkbox from '@/Components/Checkbox.vue';
+import FlashSuccessPopup from '@/Components/FlashSuccessPopup.vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 defineProps({
     canResetPassword: {
         type: Boolean,
     },
-    status: {
-        type: String,
-    },
 });
+
+const page = usePage();
+const flashSuccess = computed(() => page.props.flash?.success ?? '');
 
 const form = useForm({
     email: '',
@@ -33,14 +35,16 @@ const submit = () => {
     <GuestLayout>
         <Head title="Log in" />
 
+        <FlashSuccessPopup
+            :show="!!flashSuccess"
+            :message="flashSuccess"
+            :actionHref="route('login')"
+        />
+
         <!-- Page Title -->
         <div class="text-center mb-4 sm:mb-5 md:mb-6">
             <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Welcome Back</h2>
             <p class="text-xs sm:text-sm text-gray-600 mt-1">Please sign in to your account</p>
-        </div>
-
-        <div v-if="status" class="mb-4 text-xs sm:text-sm font-medium text-green-700 bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
-            {{ status }}
         </div>
 
         <form @submit.prevent="submit" class="space-y-4 sm:space-y-5">

@@ -1,17 +1,15 @@
 <script setup>
+import { computed } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
+import FlashSuccessPopup from '@/Components/FlashSuccessPopup.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
 
-defineProps({
-    success: {
-        type: String,
-        default: null
-    }
-});
+const page = usePage();
+const flashSuccess = computed(() => page.props.flash?.success ?? '');
 
 const form = useForm({
     name: '',
@@ -35,6 +33,12 @@ const submit = () => {
 <template>
     <GuestLayout>
         <Head title="Registrasi Guru" />
+
+        <FlashSuccessPopup
+            :show="!!flashSuccess"
+            :message="flashSuccess"
+            :actionHref="route('login')"
+        />
 
         <!-- Page Title -->
         <div class="text-center mb-6">
@@ -109,10 +113,10 @@ const submit = () => {
                 <textarea
                     id="notes"
                     v-model="form.notes"
-                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm"
+                    class="mt-1 block w-full rounded-lg border-gray-300 bg-white text-black placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     rows="3"
                     placeholder="Informasi tambahan yang ingin Anda sampaikan... (Opsional)"
-                ></textarea>
+            ></textarea>
                 <InputError class="mt-2" :message="form.errors.notes" />
             </div>
 

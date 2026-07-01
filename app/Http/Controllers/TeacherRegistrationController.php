@@ -48,7 +48,7 @@ class TeacherRegistrationController extends Controller
 
         return redirect()->route('teacher.register.create')->with(
             'success',
-            'Pendaftaran berhasil dikirim! Silakan tunggu konfirmasi dari admin sekolah. Anda akan dihubungi melalui email.'
+            'Pendaftaran berhasil. Akun Anda akan diverifikasi oleh administrator. Setelah disetujui, informasi login akan dikirim melalui email.'
         );
     }
 }

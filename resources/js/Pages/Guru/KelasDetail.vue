@@ -6,13 +6,23 @@ import { ref, computed } from 'vue';
 const props = defineProps({
     classRoom: { type: Object, required: true },
     students: { type: Array, default: () => [] },
-    attendanceDates: { type: Array, default: () => [] }
+    attendanceDates: { type: Array, default: () => [] },
+    availableMonths: { type: Array, default: () => [] },
+    selectedMonth: { type: String, default: '' },
+    attendanceData: { type: Object, default: () => ({}) }
 });
 
 const page = usePage();
 const flash = computed(() => page.props.flash || {});
+const selectedMonth = ref(props.selectedMonth || '');
+
+const selectedMonthLabel = computed(() => {
+    return props.availableMonths.find((month) => month.value === selectedMonth.value)?.label || 'Semua Bulan';
+});
 
 const showEditModal = ref(false);
+const showAttendanceSuccessModal = ref(false);
+const attendanceSuccessMessage = ref('');
 const editingAttendance = ref({
     studentId: null,
     studentName: '',
@@ -99,6 +109,11 @@ const closeEditModal = () => {
     };
 };
 
+const closeAttendanceSuccessModal = () => {
+    showAttendanceSuccessModal.value = false;
+    attendanceSuccessMessage.value = '';
+};
+
 const updateAttendance = () => {
     if (editingAttendance.value.currentStatus === editingAttendance.value.newStatus) {
         closeEditModal();
@@ -112,8 +127,21 @@ const updateAttendance = () => {
         status: editingAttendance.value.newStatus
     }, {
         preserveScroll: true,
-        onSuccess: () => closeEditModal(),
+        onSuccess: () => {
+            closeEditModal();
+            attendanceSuccessMessage.value = 'Status kehadiran berhasil diubah.';
+            showAttendanceSuccessModal.value = true;
+        },
         onError: (errors) => alert('Gagal mengubah status: ' + Object.values(errors).join(', '))
+    });
+};
+
+const changeMonth = () => {
+    router.get(route('guru.kelas.show', props.classRoom.id), {
+        month: selectedMonth.value || undefined,
+    }, {
+        preserveScroll: true,
+        replace: true,
     });
 };
 </script>
@@ -181,9 +209,42 @@ const updateAttendance = () => {
 
             <!-- Attendance Table -->
             <div v-if="students.length > 0" class="attendance-table-container">
-                <div class="attendance-table-header">
-                    <h3 class="text-lg font-bold text-gray-900">Student Attendance Records</h3>
-                    <span class="text-sm text-gray-600">{{ students.length }} students | {{ attendanceDates.length }} dates</span>
+                <div class="attendance-table-header flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">Student Attendance Records</h3>
+                        <span class="text-sm text-gray-600">{{ students.length }} students | {{ selectedMonthLabel }} | {{ attendanceDates.length }} dates</span>
+                    </div>
+
+                    <div class="w-fit overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-sky-50 shadow-lg shadow-slate-200/60">
+                        <div class="h-1.5 bg-gradient-to-r from-indigo-400 via-sky-400 to-emerald-400"></div>
+                        <div class="flex items-center gap-3 px-3 py-2">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-300/50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+
+                            <div class="min-w-0">
+                                <label for="month-filter" class="block text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Bulan</label>
+                                <div class="relative mt-1">
+                                    <select
+                                        id="month-filter"
+                                        v-model="selectedMonth"
+                                        @change="changeMonth"
+                                        class="select select-bordered select-sm w-52 sm:w-56 appearance-none rounded-2xl border-slate-300 bg-white/95 pr-9 text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                                        :disabled="!availableMonths.length"
+                                    >
+                                        <option v-for="month in availableMonths" :key="month.value" :value="month.value">
+                                            {{ month.label }}
+                                        </option>
+                                    </select>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="table-wrapper">
@@ -313,6 +374,25 @@ const updateAttendance = () => {
                 </div>
             </div>
             <label class="modal-backdrop" @click="closeEditModal"></label>
+        </div>
+
+        <input type="checkbox" v-model="showAttendanceSuccessModal" class="modal-toggle" />
+        <div class="modal" role="dialog">
+            <div class="modal-box max-w-md bg-gray-900 text-white text-center">
+                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/15 text-green-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+
+                <h3 class="font-bold text-lg mb-2 text-white">Berhasil</h3>
+                <p class="text-sm text-gray-300 mb-6">{{ attendanceSuccessMessage }}</p>
+
+                <div class="modal-action justify-center">
+                    <button @click="closeAttendanceSuccessModal" class="btn btn-primary text-white">OK</button>
+                </div>
+            </div>
+            <label class="modal-backdrop" @click="closeAttendanceSuccessModal"></label>
         </div>
     </GuruLayout>
 </template>

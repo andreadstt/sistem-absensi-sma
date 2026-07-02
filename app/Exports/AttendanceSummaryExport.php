@@ -3,22 +3,41 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use Carbon\Carbon;
 
-class AttendanceSummaryExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths
+/**
+ * PENTING soal baris kosong:
+ * Jangan pernah push(([])) sebagai spacer. Maatwebsite Excel/PhpSpreadsheet
+ * memperlakukan array benar-benar kosong sebagai "falsy" dan baris tsb bisa
+ * hilang saat ditulis ke sheet, membuat SEMUA baris di bawahnya bergeser naik
+ * (dan jumlah pergeserannya berbeda-beda tergantung berapa spacer yang sudah
+ * dilewati). Solusinya: spacer selalu berupa [null] (array berisi 1 elemen
+ * null), bukan [] (array kosong).
+ *
+ * PENTING soal nomor baris:
+ * Jangan hardcode nomor baris di styles(). Di sini setiap baris yang perlu
+ * distyle DICATAT posisinya secara dinamis saat ditulis di collection(),
+ * lalu styles() membaca posisi itu dari $this->rows. Dengan begitu, walau
+ * layout di atas tabel siswa berubah, style tetap kena baris yang tepat.
+ */
+class AttendanceSummaryExport implements FromCollection, WithStyles, WithColumnWidths
 {
     protected $classRoom;
     protected $students;
     protected $classAttendanceSummary;
     protected $stats;
+
+    /** @var array<string,int> Peta nama-section => nomor baris aktual di sheet */
+    protected $rows = [];
+
+    const LAST_COL = 'J';
 
     public function __construct($classRoom, $students, $classAttendanceSummary, $stats)
     {
@@ -31,46 +50,48 @@ class AttendanceSummaryExport implements FromCollection, WithHeadings, WithStyle
     public function collection()
     {
         $data = collect();
+        $currentRow = 0;
 
-        // Row 1-2: Title
-        $data->push(['LAPORAN KEHADIRAN SISWA']);
-        $data->push([]);
+        // Helper: push satu baris data, kembalikan nomor baris aktualnya
+        $push = function (array $rowData) use ($data, &$currentRow) {
+            $data->push($rowData);
+            $currentRow++;
+            return $currentRow;
+        };
+        $spacer = function () use ($push) {
+            $push([null]);
+        };
 
-        // Row 3-7: School Info
-        $data->push(['Sekolah', 'SMAN 10 Kota Bogor']);
-        $data->push(['Kelas', $this->classRoom['name']]);
-        $data->push(['Tahun Akademik', $this->classRoom['academic_year']]);
-        $data->push(['Program Studi', $this->classRoom['program']]);
-        $data->push(['Tanggal Laporan', now()->format('d F Y')]);
-        $data->push([]);
+        // Title
+        $this->rows['title'] = $push(['LAPORAN KEHADIRAN SISWA']);
+        $spacer();
 
-        // Row 9-12: Class Statistics
-        $data->push(['STATISTIK KELAS']);
-        $data->push(['Total Siswa', $this->stats['total_students'], 'orang']);
-        $data->push(['Laki-laki', $this->stats['male_count'], 'orang']);
-        $data->push(['Perempuan', $this->stats['female_count'], 'orang']);
-        $data->push([]);
+        // School Info — kolom A-B = label (di-merge), C-J = value (di-merge)
+        $this->rows['school_info_start'] = $push(['Kelas', null, $this->classRoom['name']]);
+        $push(['Wali Kelas', null, $this->classRoom['wali_kelas'] ?? '-']);
+        $push(['Tahun Ajaran', null, $this->classRoom['academic_year']]);
+        $this->rows['school_info_end'] = $push([
+            'Tanggal Cetak', null, now()->locale('id')->translatedFormat('d F Y'),
+        ]);
+        $spacer();
+        $spacer();
 
-        // Row 14-18: Attendance Summary
-        $data->push(['RINGKASAN KEHADIRAN SELURUH SISWA']);
-        $data->push(['Hadir', $this->classAttendanceSummary['total_hadir'], 'kali']);
-        $data->push(['Sakit', $this->classAttendanceSummary['total_sakit'], 'kali']);
-        $data->push(['Izin', $this->classAttendanceSummary['total_izin'], 'kali']);
-        $data->push(['Alfa (Tanpa Keterangan)', $this->classAttendanceSummary['total_alfa'], 'kali']);
-        $data->push([]);
-        $data->push([]);
+        // Student Details section title
+        $this->rows['detail_header'] = $push(['DETAIL KEHADIRAN PER SISWA']);
+        $spacer();
 
-        // Row 21: Student Details Header
-        $data->push(['DETAIL KEHADIRAN PER SISWA']);
-        $data->push([]);
+        // Student table header row (bagian dari collection, bukan WithHeadings,
+        // supaya nomor barisnya pasti sinkron dengan styles())
+        $this->rows['table_header'] = $push([
+            'No', 'NIS', 'Nama Siswa', 'Jenis Kelamin',
+            'Hadir', 'Sakit', 'Izin', 'Alfa', 'Total', 'Persentase',
+        ]);
 
-        // Row 23: Student Table Header (will be set in headings())
-        $studentStartRow = count($data) + 1;
-
-        // Add student data rows
+        // Student data rows
+        $this->rows['student_start'] = $currentRow + 1;
         foreach ($this->students as $index => $student) {
             $attendanceRate = $student['attendance_rate'];
-            $data->push([
+            $push([
                 $index + 1,
                 $student['nis'],
                 $student['name'],
@@ -80,123 +101,207 @@ class AttendanceSummaryExport implements FromCollection, WithHeadings, WithStyle
                 $student['attendance_stats']['izin'],
                 $student['attendance_stats']['alfa'],
                 $student['attendance_stats']['total'],
-                $attendanceRate . '%'
+                // Simpan sebagai angka (0-1) supaya bisa diberi number_format
+                // asli Excel (persen) dan tetap bisa dihitung/di-sort.
+                is_numeric($attendanceRate) ? $attendanceRate / 100 : $attendanceRate,
             ]);
+        }
+        $this->rows['student_end'] = $currentRow;
+
+        // ===== Keterangan Ketidakhadiran =====
+        $spacer();
+        $spacer();
+        $this->rows['notes_header'] = $push(['KETERANGAN KETIDAKHADIRAN']);
+        $spacer();
+
+        $statusLabels = [
+            'SAKIT' => 'Sakit',
+            'IZIN' => 'Izin',
+            'ALFA' => 'Alfa (Tanpa Keterangan)',
+        ];
+
+        // Kumpulkan semua catatan ketidakhadiran dari seluruh siswa jadi satu daftar
+        $allNotes = [];
+        foreach ($this->students as $student) {
+            foreach (($student['attendance_notes'] ?? []) as $note) {
+                $allNotes[] = [
+                    'nis' => $student['nis'],
+                    'name' => $student['name'],
+                    'date' => $note['date'],
+                    'subject_name' => $note['subject_name'],
+                    'status' => $statusLabels[$note['status']] ?? $note['status'],
+                ];
+            }
+        }
+
+        if (empty($allNotes)) {
+            $this->rows['notes_empty'] = $push(['Tidak ada catatan ketidakhadiran (sakit/izin/alfa) untuk periode ini.']);
+        } else {
+            $this->rows['notes_table_header'] = $push([
+                'No', 'NIS', 'Nama Siswa', 'Tanggal', 'Mata Pelajaran', 'Keterangan',
+            ]);
+
+            $this->rows['notes_start'] = $currentRow + 1;
+            foreach ($allNotes as $index => $note) {
+                $date = $note['date'] instanceof \DateTimeInterface
+                    ? Carbon::instance($note['date'])
+                    : Carbon::parse($note['date']);
+
+                $push([
+                    $index + 1,
+                    $note['nis'],
+                    $note['name'],
+                    $date->locale('id')->translatedFormat('d F Y'),
+                    $note['subject_name'],
+                    $note['status'],
+                ]);
+            }
+            $this->rows['notes_end'] = $currentRow;
         }
 
         return $data;
     }
 
-    public function headings(): array
-    {
-        return [
-            'No',
-            'NIS',
-            'Nama Siswa',
-            'Jenis Kelamin',
-            'Hadir',
-            'Sakit',
-            'Izin',
-            'Alfa',
-            'Total',
-            'Persentase'
-        ];
-    }
-
     public function styles(Worksheet $sheet)
     {
-        $styleArray = [
+        $thinBorder = [
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['argb' => 'FF000000'],
+                    'color' => ['argb' => 'FFBDBDBD'],
                 ],
             ],
         ];
 
-        // Title styling (Row 1)
-        $sheet->mergeCells('A1:J1');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16)->setColor(new Color('FFFFFFFF'));
-        $sheet->getStyle('A1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF2E7D32');
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-        $sheet->getRowDimension('1')->setRowHeight(30);
+        $r = $this->rows;
 
-        // School Info styling (Row 3-7)
-        $sheet->getStyle('A3:B7')->getFont()->setBold(true)->setSize(11);
-        $sheet->getStyle('C3:J7')->getFont()->setSize(11);
-        $sheet->getStyle('A3:B7')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF1F8E9');
+        // ===== Title =====
+        $sheet->mergeCells('A' . $r['title'] . ':' . self::LAST_COL . $r['title']);
+        $sheet->getStyle('A' . $r['title'])->getFont()->setBold(true)->setSize(16)->setColor(new Color('FFFFFFFF'));
+        $sheet->getStyle('A' . $r['title'])->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF2E7D32');
+        $sheet->getStyle('A' . $r['title'])->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension((string) $r['title'])->setRowHeight(32);
 
-        // Class Statistics Header (Row 9)
-        $sheet->mergeCells('A9:C9');
-        $sheet->getStyle('A9')->getFont()->setBold(true)->setSize(12)->setColor(new Color('FFFFFFFF'));
-        $sheet->getStyle('A9')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF1565C0');
-        $sheet->getStyle('A9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        // Class Stats Data (Row 10-12)
-        $sheet->getStyle('A10:C12')->getFont()->setSize(11);
-        $sheet->getStyle('A10:C12')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFE3F2FD');
-        $sheet->getStyle('A10:C12')->applyFromArray($styleArray);
-        $sheet->getStyle('A10:A12')->getFont()->setBold(true);
-
-        // Attendance Summary Header (Row 14)
-        $sheet->mergeCells('A14:C14');
-        $sheet->getStyle('A14')->getFont()->setBold(true)->setSize(12)->setColor(new Color('FFFFFFFF'));
-        $sheet->getStyle('A14')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF57C00');
-        $sheet->getStyle('A14')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        // Attendance Summary Data (Row 15-18)
-        $sheet->getStyle('A15:C18')->getFont()->setSize(11);
-        $sheet->getStyle('A15:C18')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFE0B2');
-        $sheet->getStyle('A15:C18')->applyFromArray($styleArray);
-        $sheet->getStyle('A15:A18')->getFont()->setBold(true);
-
-        // Student Details Header (Row 21)
-        $sheet->mergeCells('A21:J21');
-        $sheet->getStyle('A21')->getFont()->setBold(true)->setSize(12)->setColor(new Color('FFFFFFFF'));
-        $sheet->getStyle('A21')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF6A1B9A');
-        $sheet->getStyle('A21')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        // Student Table Header (Row 23)
-        $sheet->getStyle('A23:J23')->getFont()->setBold(true)->setSize(11)->setColor(new Color('FFFFFFFF'));
-        $sheet->getStyle('A23:J23')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF455A64');
-        $sheet->getStyle('A23:J23')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-        $sheet->getStyle('A23:J23')->applyFromArray($styleArray);
-
-        // Student Data Rows (Row 24+)
-        $studentStartRow = 24;
-        $studentEndRow = $studentStartRow + count($this->students) - 1;
-
-        // Alternate row colors
-        for ($row = $studentStartRow; $row <= $studentEndRow; $row++) {
-            if (($row - $studentStartRow) % 2 === 0) {
-                $sheet->getStyle("A{$row}:J{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF5F5F5');
-            }
-            $sheet->getStyle("A{$row}:J{$row}")->applyFromArray($styleArray);
-            $sheet->getStyle("A{$row}:A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("E{$row}:I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("J{$row}:J{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("D{$row}:D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        // ===== School Info =====
+        for ($row = $r['school_info_start']; $row <= $r['school_info_end']; $row++) {
+            $sheet->mergeCells("A{$row}:B{$row}");
+            $sheet->mergeCells("C{$row}:" . self::LAST_COL . $row);
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(11);
+            $sheet->getStyle("C{$row}")->getFont()->setSize(11);
+            $sheet->getStyle("A{$row}:" . self::LAST_COL . $row)->getFill()
+                ->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF1F8E9');
+            $sheet->getStyle("A{$row}:B{$row}")->applyFromArray($thinBorder);
+            $sheet->getStyle("C{$row}:" . self::LAST_COL . $row)->applyFromArray($thinBorder);
         }
 
-        // Row heights
-        $sheet->getRowDimension('23')->setRowHeight(20);
+        // ===== Student Details section title =====
+        $this->sectionHeader($sheet, $r['detail_header'], 'FF6A1B9A', self::LAST_COL);
+
+        // ===== Student Table Header =====
+        $headerRange = 'A' . $r['table_header'] . ':' . self::LAST_COL . $r['table_header'];
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->setSize(11)->setColor(new Color('FFFFFFFF'));
+        $sheet->getStyle($headerRange)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF455A64');
+        $sheet->getStyle($headerRange)->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setWrapText(true);
+        $sheet->getStyle($headerRange)->applyFromArray($thinBorder);
+        $sheet->getRowDimension((string) $r['table_header'])->setRowHeight(22);
+
+        // Freeze pane tepat di bawah header tabel siswa
+        $sheet->freezePane('A' . $r['student_start']);
+
+        // ===== Student Data Rows =====
+        for ($row = $r['student_start']; $row <= $r['student_end']; $row++) {
+            $range = "A{$row}:" . self::LAST_COL . "{$row}";
+
+            if (($row - $r['student_start']) % 2 === 1) {
+                $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF5F5F5');
+            }
+            $sheet->getStyle($range)->applyFromArray($thinBorder);
+            $sheet->getStyle($range)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+
+            $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("E{$row}:I{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("J{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("J{$row}")->getNumberFormat()->setFormatCode('0.0%');
+
+            $sheet->getRowDimension((string) $row)->setRowHeight(18);
+        }
+
+        $sheet->setShowGridlines(false);
+
+        // ===== Keterangan Ketidakhadiran =====
+        $this->sectionHeader($sheet, $r['notes_header'], 'FFC62828', self::LAST_COL);
+
+        if (isset($r['notes_empty'])) {
+            $row = $r['notes_empty'];
+            $sheet->mergeCells("A{$row}:" . self::LAST_COL . $row);
+            $sheet->getStyle("A{$row}")->getFont()->setItalic(true)->setSize(11)->getColor()->setARGB('FF757575');
+            $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        } elseif (isset($r['notes_table_header'])) {
+            // Header tabel keterangan (No, NIS, Nama, Tanggal, Mapel, Keterangan)
+            $headerRow = $r['notes_table_header'];
+            $notesHeaderRange = "A{$headerRow}:F{$headerRow}";
+            $sheet->getStyle($notesHeaderRange)->getFont()->setBold(true)->setSize(11)->setColor(new Color('FFFFFFFF'));
+            $sheet->getStyle($notesHeaderRange)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF455A64');
+            $sheet->getStyle($notesHeaderRange)->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER)
+                ->setWrapText(true);
+            $sheet->getStyle($notesHeaderRange)->applyFromArray($thinBorder);
+            $sheet->getRowDimension((string) $headerRow)->setRowHeight(22);
+
+            for ($row = $r['notes_start']; $row <= $r['notes_end']; $row++) {
+                $range = "A{$row}:F{$row}";
+
+                if (($row - $r['notes_start']) % 2 === 1) {
+                    $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFFEBEE');
+                }
+                $sheet->getStyle($range)->applyFromArray($thinBorder);
+                $sheet->getStyle($range)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+                $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getRowDimension((string) $row)->setRowHeight(18);
+            }
+        }
 
         return [];
+    }
+
+    /**
+     * Style baris header section (mis. "STATISTIK KELAS") yang isinya SUDAH
+     * ditulis oleh collection() — di sini kita hanya menerapkan style pada
+     * baris yang benar, tanpa menimpa nilai selnya lagi.
+     */
+    private function sectionHeader(Worksheet $sheet, int $row, string $argbColor, string $lastCol): void
+    {
+        $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(12)->setColor(new Color('FFFFFFFF'));
+        $sheet->getStyle("A{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($argbColor);
+        $sheet->getStyle("A{$row}")->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension((string) $row)->setRowHeight(22);
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 5,
+            'A' => 6,
             'B' => 12,
-            'C' => 25,
+            'C' => 26,
             'D' => 15,
             'E' => 10,
             'F' => 10,
             'G' => 10,
             'H' => 10,
             'I' => 10,
-            'J' => 12,
+            'J' => 13,
         ];
     }
 }

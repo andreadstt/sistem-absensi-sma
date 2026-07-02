@@ -38,23 +38,50 @@ class KelasController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Get unique attendance dates for this class (where this teacher recorded)
-        $attendanceDates = Attendance::where('class_room_id', $classRoomId)
+        $attendanceQuery = Attendance::where('class_room_id', $classRoomId)
             ->where('teacher_id', $teacher->id)
-            ->distinct()
-            ->orderBy('date', 'desc')
+            ->orderBy('date', 'desc');
+
+        $attendanceRecords = (clone $attendanceQuery)->get();
+
+        $availableMonthValues = $attendanceRecords->pluck('date')
+            ->map(function ($date) {
+                return \Carbon\Carbon::parse($date)->format('Y-m');
+            })
+            ->unique()
+            ->values();
+
+        $requestedMonth = $request->query('month');
+        $selectedMonth = $availableMonthValues->contains($requestedMonth)
+            ? $requestedMonth
+            : $availableMonthValues->first();
+
+        $availableMonths = $availableMonthValues->map(function ($month) {
+            $monthDate = \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01')->locale('id');
+
+            return [
+                'value' => $month,
+                'label' => $monthDate->translatedFormat('F Y'),
+            ];
+        })->values();
+
+        $selectedAttendanceRecords = $selectedMonth
+            ? $attendanceRecords->filter(function ($record) use ($selectedMonth) {
+                return \Carbon\Carbon::parse($record->date)->format('Y-m') === $selectedMonth;
+            })->values()
+            : collect();
+
+        // Get unique attendance dates for the selected month only
+        $attendanceDates = $selectedAttendanceRecords
             ->pluck('date')
             ->map(function ($date) {
                 return \Carbon\Carbon::parse($date)->format('d/m/y');
             })
+            ->unique()
             ->values();
 
-        // Get attendance records for display
-        $attendanceData = Attendance::where('class_room_id', $classRoomId)
-            ->where('teacher_id', $teacher->id)
-            ->with('student')
-            ->orderBy('date', 'desc')
-            ->get()
+        // Get attendance records for the selected month only
+        $attendanceData = $selectedAttendanceRecords
             ->groupBy(function ($item) {
                 return \Carbon\Carbon::parse($item->date)->format('d/m/y');
             });
@@ -84,6 +111,9 @@ class KelasController extends Controller
             ],
             'students' => $studentRows,
             'attendanceDates' => $attendanceDates,
+            'attendanceData' => $attendanceData,
+            'availableMonths' => $availableMonths,
+            'selectedMonth' => $selectedMonth,
         ]);
     }
 
@@ -114,78 +144,65 @@ class KelasController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Get unique attendance dates for this class
-        $attendanceDates = Attendance::where('class_room_id', $classRoomId)
+        // Get all attendance records for summary calculation
+        $attendanceRecords = Attendance::where('class_room_id', $classRoomId)
             ->where('teacher_id', $teacher->id)
-            ->distinct()
-            ->orderBy('date', 'asc')
-            ->pluck('date')
-            ->map(function ($date) {
-                return \Carbon\Carbon::parse($date)->format('Y-m-d');
-            })
-            ->values();
-
-        // Get attendance records
-        $attendanceData = Attendance::where('class_room_id', $classRoomId)
-            ->where('teacher_id', $teacher->id)
-            ->with('student')
             ->orderBy('date', 'asc')
             ->get()
-            ->groupBy(function ($item) {
-                return \Carbon\Carbon::parse($item->date)->format('Y-m-d');
-            });
+            ->groupBy('student_id');
 
         // Generate CSV content
         $csvData = [];
-        
-        // Header row 1: Class information
+
+        // Header rows: report metadata
         $csvData[] = ['Rekap Kehadiran Siswa'];
         $csvData[] = ['Kelas', $classRoom->full_name ?? $classRoom->name];
-        $csvData[] = ['Program', $classRoom->program->short_name ?? '-'];
+        $csvData[] = ['Mata Pelajaran', $teachingAssignment->subject->name ?? '-'];
+        $csvData[] = ['Guru Pengajar', $teacher->name];
         $csvData[] = ['Tahun Akademik', $classRoom->academicYear->name ?? '-'];
-        $csvData[] = ['Guru', $teacher->name];
         $csvData[] = ['Tanggal Export', \Carbon\Carbon::now()->format('d/m/Y H:i')];
-        $csvData[] = []; // Empty row
+        $csvData[] = [];
 
-        // Header row 2: Column headers
-        $headerRow = ['No', 'Nama Siswa'];
-        foreach ($attendanceDates as $date) {
-            $headerRow[] = \Carbon\Carbon::parse($date)->format('d/m/Y');
-        }
-        $headerRow[] = 'Total Hadir';
-        $headerRow[] = 'Total Sakit';
-        $headerRow[] = 'Total Izin';
-        $headerRow[] = 'Total Alfa';
-        $csvData[] = $headerRow;
+        // Summary column headers
+        $csvData[] = ['No', 'NIS', 'Nama Siswa', 'Hadir', 'Sakit', 'Izin', 'Alfa', 'Persentase Kehadiran'];
 
         // Data rows
         $no = 1;
         foreach ($students as $student) {
-            $row = [$no++, $student->name];
-            
+            $studentAttendances = $attendanceRecords->get($student->id, collect());
+
             $totalHadir = 0;
             $totalSakit = 0;
             $totalIzin = 0;
             $totalAlfa = 0;
 
-            foreach ($attendanceDates as $date) {
-                $record = $attendanceData->get($date)?->firstWhere('student_id', $student->id);
-                $status = $record ? $record->status : '-';
-                $row[] = $status;
-
-                // Count totals
-                if ($status === 'HADIR') $totalHadir++;
-                else if ($status === 'SAKIT') $totalSakit++;
-                else if ($status === 'IZIN') $totalIzin++;
-                else if ($status === 'ALFA') $totalAlfa++;
+            foreach ($studentAttendances as $attendance) {
+                if ($attendance->status === 'HADIR') {
+                    $totalHadir++;
+                } elseif ($attendance->status === 'SAKIT') {
+                    $totalSakit++;
+                } elseif ($attendance->status === 'IZIN') {
+                    $totalIzin++;
+                } elseif ($attendance->status === 'ALFA') {
+                    $totalAlfa++;
+                }
             }
 
-            $row[] = $totalHadir;
-            $row[] = $totalSakit;
-            $row[] = $totalIzin;
-            $row[] = $totalAlfa;
-            
-            $csvData[] = $row;
+            $totalRecord = $totalHadir + $totalSakit + $totalIzin + $totalAlfa;
+            $persentaseKehadiran = $totalRecord > 0
+                ? number_format(($totalHadir / $totalRecord) * 100, 1, '.', '') . '%'
+                : '0.0%';
+
+            $csvData[] = [
+                $no++,
+                $student->nis,
+                $student->name,
+                $totalHadir,
+                $totalSakit,
+                $totalIzin,
+                $totalAlfa,
+                $persentaseKehadiran,
+            ];
         }
 
         // Generate CSV file

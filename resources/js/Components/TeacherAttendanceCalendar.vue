@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
     attendances: Array,
@@ -9,7 +9,39 @@ const props = defineProps({
 
 const emit = defineEmits(['update:attendance', 'month-change'])
 
-const currentDate = ref(new Date(props.currentMonth + '-01'))
+const getMonthDate = (monthValue) => {
+    if (!monthValue) return new Date()
+
+    const parsed = new Date(`${monthValue}-01`)
+    return isNaN(parsed.getTime()) ? new Date() : parsed
+}
+
+const normalizeDate = (dateValue) => {
+    if (!dateValue) return ''
+
+    const parsed = new Date(dateValue)
+    if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString().slice(0, 10)
+    }
+
+    return String(dateValue).slice(0, 10)
+}
+
+const currentDate = ref(getMonthDate(props.currentMonth))
+
+watch(
+    () => props.currentMonth,
+    (newMonth) => {
+        currentDate.value = getMonthDate(newMonth)
+    }
+)
+
+const normalizedAttendances = computed(() => {
+    return (props.attendances || []).map((attendance) => ({
+        ...attendance,
+        date: normalizeDate(attendance.date),
+    }))
+})
 
 const daysInMonth = computed(() => {
     return new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + 1, 0).getDate()
@@ -40,7 +72,7 @@ const monthName = computed(() => {
 const getAttendanceForDate = (day) => {
     if (!day) return null
     const dateStr = `${currentDate.value.getFullYear()}-${String(currentDate.value.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return props.attendances?.find(att => att.date === dateStr)
+    return normalizedAttendances.value.find(att => att.date === dateStr)
 }
 
 const getStatusColor = (status) => {

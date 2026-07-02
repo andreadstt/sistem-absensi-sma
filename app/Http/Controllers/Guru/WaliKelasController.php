@@ -195,6 +195,7 @@ class WaliKelasController extends Controller
             'name' => $classRoom->name,
             'academic_year' => $classRoom->academicYear?->name,
             'program' => $classRoom->program?->name,
+            'wali_kelas' => $teacher->name,
         ];
 
         // Get all students with attendance stats
@@ -204,6 +205,8 @@ class WaliKelasController extends Controller
             ->map(function ($student) use ($classRoom) {
                 $attendanceRecords = \App\Models\Attendance::where('class_room_id', $classRoom->id)
                     ->where('student_id', $student->id)
+                    ->with('subject')
+                    ->orderBy('date')
                     ->get();
 
                 $stats = [
@@ -218,12 +221,27 @@ class WaliKelasController extends Controller
                     ? round(($stats['hadir'] / $stats['total']) * 100, 1) 
                     : 0;
 
+                // Catatan ketidakhadiran (sakit/izin/alfa) lengkap dengan
+                // tanggal & mata pelajaran, supaya wali kelas tahu detailnya
+                // saat mencetak laporan.
+                $attendanceNotes = $attendanceRecords
+                    ->whereIn('status', ['SAKIT', 'IZIN', 'ALFA'])
+                    ->map(function ($record) {
+                        return [
+                            'date' => $record->date,
+                            'subject_name' => $record->subject?->name ?? 'Tidak Diketahui',
+                            'status' => $record->status,
+                        ];
+                    })
+                    ->values();
+
                 return [
                     'nis' => $student->nis,
                     'name' => $student->name,
                     'gender' => $student->gender,
                     'attendance_stats' => $stats,
                     'attendance_rate' => $attendanceRate,
+                    'attendance_notes' => $attendanceNotes,
                 ];
             });
 

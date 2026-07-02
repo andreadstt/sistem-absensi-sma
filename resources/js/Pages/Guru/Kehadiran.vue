@@ -17,8 +17,26 @@ const props = defineProps({
 const currentMonth = ref(new Date().toISOString().slice(0, 7))
 const selectedDate = ref(null)
 
+const normalizeDate = (dateValue) => {
+    if (!dateValue) return ''
+
+    const date = new Date(dateValue)
+    if (!isNaN(date.getTime())) {
+        return date.toISOString().slice(0, 10)
+    }
+
+    return String(dateValue).slice(0, 10)
+}
+
+const normalizedAttendances = computed(() => {
+    return (props.attendances || []).map((attendance) => ({
+        ...attendance,
+        date: normalizeDate(attendance.date),
+    }))
+})
+
 const filteredAttendances = computed(() => {
-    return props.attendances.filter(att => att.date.startsWith(currentMonth.value))
+    return normalizedAttendances.value.filter(att => att.date.startsWith(currentMonth.value))
 })
 
 const monthlyStats = computed(() => {
@@ -121,7 +139,7 @@ const formatDate = (date) => {
                 <!-- Calendar -->
                 <div class="lg:col-span-2">
                     <TeacherAttendanceCalendar 
-                        :attendances="props.attendances"
+                        :attendances="filteredAttendances"
                         :current-month="currentMonth"
                         :is-editable="false"
                         @update:attendance="handleDateClick"

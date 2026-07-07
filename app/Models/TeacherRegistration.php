@@ -10,6 +10,7 @@ class TeacherRegistration extends Model
     protected $fillable = [
         'email',
         'name',
+        'password',
         'nip',
         'phone',
         'notes',

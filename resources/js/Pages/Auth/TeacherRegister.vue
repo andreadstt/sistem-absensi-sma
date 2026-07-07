@@ -14,6 +14,8 @@ const flashSuccess = computed(() => page.props.flash?.success ?? '');
 const form = useForm({
     name: '',
     email: '',
+    password: '',
+    password_confirmation: '',
     nip: '',
     phone: '',
     notes: '',
@@ -23,7 +25,7 @@ const submit = () => {
     form.post(route('teacher.register.store'), {
         onFinish: () => {
             if (!form.hasErrors) {
-                form.reset();
+                form.reset('password', 'password_confirmation', 'name', 'email', 'nip', 'phone', 'notes');
             }
         },
     });
@@ -82,6 +84,32 @@ const submit = () => {
                     placeholder="contoh@email.com"
                 />
                 <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <div>
+                <InputLabel for="password" value="Password *" />
+                <TextInput
+                    id="password"
+                    type="password"
+                    class="mt-1 block w-full"
+                    v-model="form.password"
+                    required
+                    placeholder="Buat password Anda"
+                />
+                <InputError class="mt-2" :message="form.errors.password" />
+            </div>
+
+            <div>
+                <InputLabel for="password_confirmation" value="Konfirmasi Password *" />
+                <TextInput
+                    id="password_confirmation"
+                    type="password"
+                    class="mt-1 block w-full"
+                    v-model="form.password_confirmation"
+                    required
+                    placeholder="Ulangi password Anda"
+                />
+                <InputError class="mt-2" :message="form.errors.password_confirmation" />
             </div>
 
             <div>

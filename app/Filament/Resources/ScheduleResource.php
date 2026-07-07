@@ -92,6 +92,65 @@ class ScheduleResource extends Resource
                             ->regex('/^\d{2}:\d{2}-\d{2}:\d{2}$/')
                             ->validationMessages([
                                 'regex' => 'Format jam harus HH:MM-HH:MM (contoh: 07:00-08:00)',
+                            ])
+                            ->rules([
+                                fn(Get $get, $component): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $component) {
+                                    $recordId = $component->getRecord()->id ?? null;
+                                    $weekday = $get('weekday');
+                                    $teacherId = $get('teacher_id');
+                                    $classRoomId = $get('class_room_id');
+                                    $timeSlot = $value;
+
+                                    if (!$weekday || !$teacherId || !$classRoomId || !$timeSlot) {
+                                        return;
+                                    }
+
+                                    $timeParts = explode('-', $timeSlot);
+                                    if (count($timeParts) !== 2) {
+                                        return;
+                                    }
+
+                                    $newStartTime = strtotime($timeParts[0]);
+                                    $newEndTime = strtotime($timeParts[1]);
+
+                                    if ($newStartTime === false || $newEndTime === false || $newStartTime >= $newEndTime) {
+                                        $fail('Format jam pelajaran tidak valid atau jam mulai lebih besar dari/sama dengan jam selesai.');
+                                        return;
+                                    }
+
+                                    $conflictingSchedules = Schedule::where('weekday', $weekday)
+                                        ->where(function ($query) use ($teacherId, $classRoomId) {
+                                            $query->where('teacher_id', $teacherId)
+                                                ->orWhere('class_room_id', $classRoomId);
+                                        })
+                                        ->when($recordId, fn($query) => $query->where('id', '!=', $recordId))
+                                        ->get();
+
+                                    foreach ($conflictingSchedules as $existingSchedule) {
+                                        $existingTimeParts = explode('-', $existingSchedule->time_slot);
+                                        if (count($existingTimeParts) !== 2) {
+                                            continue;
+                                        }
+
+                                        $existingStartTime = strtotime($existingTimeParts[0]);
+                                        $existingEndTime = strtotime($existingTimeParts[1]);
+
+                                        if ($existingStartTime === false || $existingEndTime === false) {
+                                            continue;
+                                        }
+
+                                        if ($newStartTime < $existingEndTime && $newEndTime > $existingStartTime) {
+                                            if ($existingSchedule->teacher_id == $teacherId) {
+                                                $fail("Jadwal bentrok: Guru ini sudah mengajar di kelas {$existingSchedule->classRoom->name} pada jam {$existingSchedule->time_slot}.");
+                                                return;
+                                            }
+                                            if ($existingSchedule->class_room_id == $classRoomId) {
+                                                $fail("Jadwal bentrok: Ruang kelas ini sudah dipakai oleh guru {$existingSchedule->teacher->name} untuk mapel {$existingSchedule->subject->name} pada jam {$existingSchedule->time_slot}.");
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
                             ]),
                     ])
                     ->columns(2),

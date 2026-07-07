@@ -39,6 +39,12 @@ class AuthenticatedSessionController extends Controller
         }
 
         if ($user->hasRole('guru')) {
+            if ($user->must_change_password) {
+                return redirect()
+                    ->route('guru.profile.show')
+                    ->with('warning', 'Untuk keamanan akun, Anda wajib mengganti password sementara sebelum menggunakan sistem.');
+            }
+
             return redirect()->route('guru.dashboard');
         }
 

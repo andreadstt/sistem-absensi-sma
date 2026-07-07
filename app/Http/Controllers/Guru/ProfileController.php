@@ -36,6 +36,7 @@ class ProfileController extends Controller
             'user' => [
                 'email' => $user->email,
             ],
+            'mustChangePassword' => $user->must_change_password,
         ]);
     }
 

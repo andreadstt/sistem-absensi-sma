@@ -15,7 +15,6 @@ class TeacherApproved extends Mailable
     public function __construct(
         public string $name,
         public string $email,
-        public string $defaultPassword,
         public string $loginUrl,
     ) {
     }

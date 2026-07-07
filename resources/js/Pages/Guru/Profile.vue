@@ -1,8 +1,10 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, usePage, useForm } from '@inertiajs/vue3';
 import GuruLayout from '@/Layouts/GuruLayout.vue';
 import AvatarUpload from '@/Components/Guru/AvatarUpload.vue';
+
+
 
 const props = defineProps({
     teacher: {
@@ -21,10 +23,24 @@ const props = defineProps({
             email: 'user@example.com',
         }),
     },
+    mustChangePassword: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const page = usePage();
 const refreshKey = ref(0);
+
+const securityWarning = computed(() => {
+    return page.props.flash?.warning || (props.mustChangePassword
+        ? 'Untuk keamanan akun, Anda wajib mengganti password sementara sebelum menggunakan sistem.'
+        : '');
+});
+
+const showCurrentPassword = ref(false);
+const showNewPassword = ref(false);
+const showConfirmPassword = ref(false);
 
 // Form for profile updates
 const form = useForm({
@@ -32,6 +48,21 @@ const form = useForm({
     nip: props.teacher?.nip || '',
     phone: props.teacher?.phone || '',
 });
+
+const passwordForm = useForm({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
+});
+
+const submitPassword = () => {
+    passwordForm.put(route('password.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            passwordForm.reset();
+        },
+    });
+};
 
 // Watch for changes in props and update form
 watch(
@@ -74,6 +105,17 @@ const handleAvatarUpdated = () => {
             <div>
                 <p class="font-semibold">Berhasil!</p>
                 <p class="text-sm">{{ page.props.flash?.success }}</p>
+            </div>
+        </div>
+
+        <!-- Security Warning -->
+        <div v-if="securityWarning" class="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg flex items-start gap-3">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.763-1.36 2.723-1.36 3.486 0l6.518 11.611C19.001 16.07 18.03 18 16.518 18H3.482c-1.512 0-2.483-1.93-1.743-3.29L8.257 3.1zM9 8a1 1 0 112 0v3a1 1 0 11-2 0V8zm1 7a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 15z" clip-rule="evenodd" />
+            </svg>
+            <div>
+                <p class="font-semibold">Peringatan Keamanan</p>
+                <p class="text-sm">{{ securityWarning }}</p>
             </div>
         </div>
 
@@ -167,6 +209,43 @@ const handleAvatarUpdated = () => {
                                     placeholder="Masukkan nomor telepon (opsional)"
                                 />
                                 <p v-if="form.errors.phone" class="text-xs text-red-600 mt-1">{{ form.errors.phone }}</p>
+                                <div class="mt-8 flex justify-end">
+                                    <button
+                                        type="submit"
+                                        :disabled="form.processing"
+                                        class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+                                    >
+                                        <span v-if="!form.processing">
+                                            💾 Simpan Profil
+                                        </span>
+
+                                        <span
+                                            v-else
+                                            class="flex items-center gap-2"
+                                        >
+                                            <svg class="animate-spin h-5 w-5"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24">
+                                                <circle
+                                                    class="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    stroke-width="4"
+                                                />
+                                                <path
+                                                    class="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                                />
+                                            </svg>
+
+                                            Menyimpan...
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -204,29 +283,125 @@ const handleAvatarUpdated = () => {
                         </div>
                     </div>
 
-                    <!-- Submit Button -->
-                    <div class="flex gap-4">
-                        <button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-                        >
-                            <span v-if="!form.processing">💾 Simpan Perubahan</span>
-                            <span v-else class="flex items-center justify-center gap-2">
-                                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Menyimpan...
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            @click="form.reset()"
-                            class="px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition"
-                        >
-                            Batal
-                        </button>
+                                        <!-- Change Password Card -->
+                    <div class="bg-white rounded-lg shadow-md p-8 mb-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 11c0 .53-.21 1.04-.59 1.41A2 2 0 1112 11zm6-2V7a6 6 0 10-12 0v2H5a1 1 0 00-1 1v9a1 1 0 001 1h14a1 1 0 001-1v-9a1 1 0 00-1-1h-1z" />
+                            </svg>
+                            Ubah Password
+                        </h3>
+
+                        <form @submit.prevent="submitPassword">
+                            <div class="space-y-6">
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Password Lama
+                                    </label>
+
+                                    <div class="relative">
+                                    <input
+                                        v-model="passwordForm.current_password"
+                                        :type="showCurrentPassword ? 'text' : 'password'"
+                                        class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                    >
+
+                                    <button
+                                        type="button"
+                                        @click="showCurrentPassword = !showCurrentPassword"
+                                        class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                    >
+                                        <svg v-if="showCurrentPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                        </svg>
+                                        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                    <p v-if="passwordForm.errors.current_password"
+                                    class="text-red-600 text-sm mt-1">
+                                        {{ passwordForm.errors.current_password }}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Password Baru
+                                    </label>
+
+                                    <div class="relative">
+                                        <input
+                                            v-model="passwordForm.password"
+                                            :type="showNewPassword ? 'text' : 'password'"
+                                            class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            @click="showNewPassword = !showNewPassword"
+                                            class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                        >
+                                            <svg v-if="showNewPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                            </svg>
+                                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <p v-if="passwordForm.errors.password"
+                                    class="text-red-600 text-sm mt-1">
+                                        {{ passwordForm.errors.password }}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Konfirmasi Password Baru
+                                    </label>
+
+                                    <div class="relative">
+                                        <input
+                                            v-model="passwordForm.password_confirmation"
+                                            :type="showConfirmPassword ? 'text' : 'password'"
+                                            class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            @click="showConfirmPassword = !showConfirmPassword"
+                                            class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                        >
+                                            <svg v-if="showConfirmPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                            </svg>
+                                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="mt-6">
+                                <button
+                                    type="submit"
+                                    :disabled="passwordForm.processing"
+                                    class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                >
+                                    {{ passwordForm.processing ? 'Menyimpan...' : 'Perbarui Password' }}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </form>
             </div>

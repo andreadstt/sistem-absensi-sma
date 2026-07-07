@@ -9,6 +9,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -84,7 +85,7 @@ class ClassRoomResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
                     ->label('Nama Kelas')
-                    ->searchable(['name', 'grade_level', 'section'])
+                    ->searchable(['name', 'grade_level', 'section', 'headTeacher.name'])
                     ->sortable()
                     ->badge()
                     ->color('primary'),
@@ -125,6 +126,11 @@ class ClassRoomResource extends Resource
                 Tables\Filters\SelectFilter::make('program_id')
                     ->label('Program')
                     ->relationship('program', 'short_name'),
+                Tables\Filters\SelectFilter::make('head_teacher_id')
+                    ->label('Wali Kelas')
+                    ->relationship('headTeacher', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -157,7 +163,10 @@ class ClassRoomResource extends Resource
                         ->color('danger'),
                 ]),
             ])
-            ->defaultSort('grade_level');
+            ->defaultSort('grade_level')
+            ->groups([
+                Group::make('grade_level_with_label')->collapsible(),
+            ]);
     }
 
     public static function getRelations(): array

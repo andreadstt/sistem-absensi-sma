@@ -83,4 +83,13 @@ class ClassRoom extends Model
 
         return implode(' ', $parts);
     }
+
+    /**
+     * Get the grade level with a label.
+     * Example: "Kelas 10"
+     */
+    public function getGradeLevelWithLabelAttribute(): string
+    {
+        return "Kelas {$this->grade_level}";
+    }
 }

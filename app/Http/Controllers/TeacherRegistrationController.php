@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\TeacherRegistration;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use Illuminate\Validation\Rules\Password;
 
 class TeacherRegistrationController extends Controller
 {
@@ -25,6 +27,7 @@ class TeacherRegistrationController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|unique:teacher_registrations,email|unique:users,email',
             'name' => 'required|string|max:255',
+            'password' => ['required', 'confirmed', Password::min(8)],
             'nip' => 'nullable|string|max:255|unique:teachers,nip',
             'phone' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
@@ -40,6 +43,7 @@ class TeacherRegistrationController extends Controller
         TeacherRegistration::create([
             'email' => $request->email,
             'name' => $request->name,
+            'password' => Hash::make($request->password),
             'nip' => $request->nip,
             'phone' => $request->phone,
             'notes' => $request->notes,
@@ -48,7 +52,7 @@ class TeacherRegistrationController extends Controller
 
         return redirect()->route('teacher.register.create')->with(
             'success',
-            'Pendaftaran berhasil. Akun Anda akan diverifikasi oleh administrator. Setelah disetujui, informasi login akan dikirim melalui email.'
+            'Pendaftaran berhasil. Akun Anda akan diverifikasi oleh administrator. Setelah disetujui, Anda bisa login dengan password yang telah Anda buat.'
         );
     }
 }

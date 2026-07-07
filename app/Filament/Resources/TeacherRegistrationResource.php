@@ -202,29 +202,36 @@ class TeacherRegistrationResource extends Resource
 
     protected static function approveRegistration(TeacherRegistration $registration)
     {
+        // Validasi: Pastikan password ada di record registrasi
+        if (empty($registration->password)) {
+            Notification::make()
+                ->title('Error')
+                ->body('Data pendaftaran tidak memiliki password. Pendaftar mungkin menggunakan form versi lama.')
+                ->danger()
+                ->send();
+            return;
+        }
+
         try {
             \DB::beginTransaction();
 
-            // Generate random password
-            $password = Str::random(12);
-
-            // Create user account
+            // Create user account using the pre-hashed password
             $user = User::create([
                 'name' => $registration->name,
                 'email' => $registration->email,
-                'password' => Hash::make($password),
+                'password' => $registration->password, // Password is already hashed
+                'must_change_password' => false, // User has set their own password
             ]);
 
             // Assign guru role
             $user->assignRole('guru');
 
-            // Create teacher profile
+            // Create teacher profile (without default_password)
             $teacher = Teacher::create([
                 'user_id' => $user->id,
                 'name' => $registration->name,
                 'nip' => $registration->nip,
                 'phone' => $registration->phone,
-                'default_password' => $password,
             ]);
 
             // Update registration status
@@ -237,10 +244,10 @@ class TeacherRegistrationResource extends Resource
             \DB::commit();
 
             try {
+                // Send email without the password
                 Mail::to($registration->email)->send(new TeacherApproved(
                     name: $registration->name,
                     email: $registration->email,
-                    defaultPassword: $password,
                     loginUrl: route('login'),
                 ));
             } catch (\Throwable $e) {
@@ -249,10 +256,10 @@ class TeacherRegistrationResource extends Resource
 
             Notification::make()
                 ->title('Pendaftaran Disetujui')
-                ->body("Akun guru berhasil dibuat untuk {$registration->name}. Password: {$password} (simpan untuk diberikan ke guru)")
+                ->body("Akun guru berhasil dibuat untuk {$registration->name}. Guru dapat login menggunakan password yang telah didaftarkan.")
                 ->success()
-                ->persistent()
                 ->send();
+
         } catch (\Exception $e) {
             \DB::rollBack();
 

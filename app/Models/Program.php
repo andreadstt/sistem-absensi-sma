@@ -11,7 +11,6 @@ class Program extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code',
         'name',
         'short_name',
         'description',

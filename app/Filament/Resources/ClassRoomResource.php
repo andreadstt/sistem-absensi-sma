@@ -38,6 +38,7 @@ class ClassRoomResource extends Resource
                     ->label('Tahun Ajaran')
                     ->relationship('academicYear', 'name')
                     ->required()
+                    ->reactive()
                     ->default(fn() => \App\Models\AcademicYear::where('is_active', true)->first()?->id),
                 Forms\Components\Select::make('grade_level')
                     ->label('Tingkat')
@@ -54,20 +55,33 @@ class ClassRoomResource extends Resource
                     ->relationship(
                         'program',
                         'short_name',
-                        fn(Builder $query, Forms\Get $get) =>
+                        fn(Builder $query, \Filament\Forms\Get $get) =>
                         $query->where('is_active', true)
                             ->where('min_grade_level', '<=', $get('grade_level') ?? 10)
                     )
                     ->required()
                     ->reactive(),
-                Forms\Components\TextInput::make('section')
-                    ->label('Kelas (1, 2, 3, ...)')
-                    ->placeholder('1')
-                    ->maxLength(10)
-                    ->required(),
+                Forms\Components\Select::make('section')
+                    ->label('Kelas Paralel')
+                    ->options(array_combine(range(1, 10), range(1, 10)))
+                    ->required()
+                    ->reactive()
+                    ->validationMessages([
+                        'unique' => 'Kombinasi Tahun Ajaran, Tingkat, Program, dan Kelas Paralel sudah ada.',
+                    ])
+                    ->unique(
+                        'class_rooms',
+                        'section',
+                        ignoreRecord: true,
+                        modifyRuleUsing: function (\Illuminate\Validation\Rules\Unique $rule, \Filament\Forms\Get $get) {
+                            return $rule->where('academic_year_id', $get('academic_year_id'))
+                                         ->where('grade_level', $get('grade_level'))
+                                         ->where('program_id', $get('program_id'));
+                        }
+                    ),
                 Forms\Components\TextInput::make('name')
-                    ->label('Nama Kelas (opsional)')
-                    ->helperText('Kosongkan untuk generate otomatis dari tingkat + program + kelas')
+                    ->label('Nama Kelas (otomatis)')
+                    ->disabled()
                     ->maxLength(255),
                 Forms\Components\Select::make('head_teacher_id')
                     ->label('Wali Kelas')
@@ -75,6 +89,14 @@ class ClassRoomResource extends Resource
                     ->searchable()
                     ->preload()
                     ->nullable()
+                    ->unique(
+                        table: 'class_rooms',
+                        column: 'head_teacher_id',
+                        ignoreRecord: true
+                    )
+                    ->validationMessages([
+                        'unique' => 'Guru ini sudah menjadi wali kelas di kelas lain.',
+                    ])
                     ->helperText('Pilih guru yang akan menjadi wali kelas (opsional)'),
             ]);
     }
@@ -179,7 +201,7 @@ class ClassRoomResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListClassRooms::route('/'),
+            'index' => Pages\BrowseClassRooms::route('/'),
             'create' => Pages\CreateClassRoom::route('/create'),
             'edit' => Pages\EditClassRoom::route('/{record}/edit'),
         ];

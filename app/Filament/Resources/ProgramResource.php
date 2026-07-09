@@ -32,12 +32,6 @@ class ProgramResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('code')
-                    ->label('Kode Program')
-                    ->placeholder('MIPA')
-                    ->required()
-                    ->maxLength(20)
-                    ->unique(ignoreRecord: true),
                 Forms\Components\TextInput::make('name')
                     ->label('Nama Program')
                     ->placeholder('Matematika dan Ilmu Pengetahuan Alam')
@@ -47,7 +41,8 @@ class ProgramResource extends Resource
                     ->label('Nama Pendek')
                     ->placeholder('MIPA')
                     ->required()
-                    ->maxLength(50),
+                    ->maxLength(50)
+                    ->unique(ignoreRecord: true),
                 Forms\Components\Textarea::make('description')
                     ->label('Deskripsi')
                     ->rows(3)
@@ -72,16 +67,12 @@ class ProgramResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('code')
-                    ->label('Kode')
+                Tables\Columns\TextColumn::make('short_name')
+                    ->label('Nama Pendek')
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->color('primary'),
-                Tables\Columns\TextColumn::make('short_name')
-                    ->label('Nama Pendek')
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Lengkap')
                     ->searchable()
@@ -194,7 +185,7 @@ class ProgramResource extends Resource
                         ->color('danger'),
                 ]),
             ])
-            ->defaultSort('code');
+            ->defaultSort('short_name');
     }
 
     public static function getRelations(): array

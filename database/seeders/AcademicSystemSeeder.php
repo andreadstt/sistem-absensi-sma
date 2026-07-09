@@ -34,7 +34,6 @@ class AcademicSystemSeeder extends Seeder
 
         // Create Programs (Jurusan)
         Program::create([
-            'code' => 'MIPA',
             'name' => 'Matematika dan Ilmu Pengetahuan Alam',
             'short_name' => 'MIPA',
             'description' => 'Program studi yang fokus pada matematika, fisika, kimia, dan biologi',
@@ -43,7 +42,6 @@ class AcademicSystemSeeder extends Seeder
         ]);
 
         Program::create([
-            'code' => 'IPS',
             'name' => 'Ilmu Pengetahuan Sosial',
             'short_name' => 'IPS',
             'description' => 'Program studi yang fokus pada ekonomi, sosiologi, geografi, dan sejarah',

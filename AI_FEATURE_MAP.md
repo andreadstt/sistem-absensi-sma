@@ -105,6 +105,7 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
     - Hak akses tidak menggunakan role `wali kelas`, melainkan pengecekan langsung: `if ($classRoom->head_teacher_id === $auth_teacher->id)`.
     - Middleware `HeadTeacherMiddleware` melindungi rute detail wali kelas.
     - Wali kelas mendapatkan menu "Wali Kelas" di sidebar-nya.
+    - **Unik Wali Kelas:** Setiap guru hanya dapat menjadi wali kelas untuk **satu** kelas. Aturan ini diterapkan melalui *unique constraint* pada kolom `head_teacher_id` di tabel `class_rooms`. Kolom ini juga bersifat `nullable`, artinya guru yang tidak ditunjuk sebagai wali kelas tidak akan melanggar aturan ini.
 - **Lokasi File Kunci:**
     - **Controller:** `app/Http/Controllers/Guru/WaliKelasController.php`.
     - **Middleware:** `app/Http/Middleware/HeadTeacherMiddleware.php`.
@@ -125,7 +126,9 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
 
 - **Tujuan:** Admin mengelola data-data inti akademik seperti Kelas, Mata Pelajaran, Tahun Ajaran, Program, dan membuat Jadwal.
 - **Lokasi File Kunci (Semua di dalam `app/Filament/Resources/`):**
-    - `ClassRoomResource.php`: Manajemen Kelas (termasuk menunjuk Wali Kelas).
+    - `ClassRoomResource.php`: Manajemen Kelas. **Catatan:** Halaman daftar (index) standar telah diganti dengan halaman navigasi *drill-down* kustom untuk mempermudah penelusuran berdasarkan Tingkat dan Jurusan. Form CRUD (Create/Edit) tetap tidak berubah.
+    - `ClassRoomResource/Pages/BrowseClassRooms.php`: Logika untuk halaman custom navigasi kelas.
+    - `views/filament/resources/class-room-resource/pages/browse-class-rooms.blade.php`: Tampilan untuk halaman custom navigasi kelas.
     - `SubjectResource.php`: Manajemen Mata Pelajaran.
     - `AcademicYearResource.php`: Manajemen Tahun Ajaran.
     - `ProgramResource.php`: Manajemen Program/Jurusan.
@@ -139,7 +142,8 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
 - **Analisis Dampak:** Fitur-fitur ini sangat saling terkait. Mengubah `TeachingAssignment` akan berdampak pada `Schedule` dan `Attendance`.
 - **Task Mapping / Jika user berkata...**
     - *"Edit cara jadwal dibuat"*: Buka `app/Filament/Resources/ScheduleResource.php`.
-    - *"Ganti wali kelas untuk 7A"*: Buka `app/Filament/Resources/ClassRoomResource.php` dan edit record untuk kelas 7A.
+    - *"Ganti wali kelas untuk 7A"*: Telusuri kelas dari menu `Kelas`, pilih Tingkat dan Jurusan yang sesuai, lalu klik kelas yang dituju untuk masuk ke halaman edit.
+    - *"Ubah tampilan penelusuran kelas"*: Buka `app/Filament/Resources/ClassRoomResource/Pages/BrowseClassRooms.php` (logika) dan `resources/views/filament/resources/class-room-resource/pages/browse-class-rooms.blade.php` (tampilan).
 
 ---
 

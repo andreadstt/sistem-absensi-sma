@@ -223,10 +223,9 @@ class FullSemesterDemoSeeder extends Seeder
         
         // Create or get programs
         $mipaProgram = Program::firstOrCreate(
-            ['code' => 'MIPA'],
+            ['short_name' => 'IPA'],
             [
                 'name' => 'Matematika dan Ilmu Pengetahuan Alam',
-                'short_name' => 'IPA',
                 'description' => 'Program studi yang fokus pada matematika, fisika, kimia, dan biologi',
                 'min_grade_level' => 10,
                 'is_active' => true,

@@ -4,30 +4,32 @@
         <div class="flex items-center text-sm font-medium text-gray-500 dark:text-gray-400">
             <span
                 @class([
-                    'cursor-pointer hover:text-primary-500' => $selectedGrade,
+                    'text-gray-900 dark:text-white' => is_null($selectedGrade), // Level saat ini, tanpa styling klik
+                    'cursor-pointer text-primary-600 hover:text-primary-500 hover:underline' => !is_null($selectedGrade), // Bisa diklik
                 ])
-                wire:click="resetSelection('all')"
+                @if (!is_null($selectedGrade)) wire:click="resetSelection('all')" @endif
             >
                 Semua Tingkat
             </span>
 
-            @if ($selectedGrade)
-                <span class="mx-2 rtl:mx-2 rtl:rotate-180">/</span>
+            @if (!is_null($selectedGrade))
+                <x-filament::icon icon="heroicon-s-chevron-right" class="h-4 w-4 mx-1 rtl:mx-2 text-gray-400 dark:text-gray-500" />
                 <span
                     @class([
-                        'cursor-pointer hover:text-primary-500' => $selectedProgramId,
+                        'text-gray-900 dark:text-white' => is_null($selectedProgramId), // Level saat ini, tanpa styling klik
+                        'cursor-pointer text-primary-600 hover:text-primary-500 hover:underline' => !is_null($selectedProgramId), // Bisa diklik
                     ])
-                    wire:click="resetSelection('grade')"
+                    @if (!is_null($selectedProgramId)) wire:click="resetSelection('grade')" @endif
                 >
                     Tingkat {{ $selectedGrade }}
                 </span>
             @endif
 
-            @if ($selectedProgramId && $selectedGrade)
+            @if (!is_null($selectedProgramId) && !is_null($selectedGrade))
                 @php
                     $program = $this->programs()->firstWhere('id', $selectedProgramId);
                 @endphp
-                <span class="mx-2 rtl:mx-2 rtl:rotate-180">/</span>
+                <x-filament::icon icon="heroicon-s-chevron-right" class="h-4 w-4 mx-1 rtl:mx-2 text-gray-400 dark:text-gray-500" />
                 <span class="text-gray-900 dark:text-white">
                     {{ $program?->name }}
                 </span>

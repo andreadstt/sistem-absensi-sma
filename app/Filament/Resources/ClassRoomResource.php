@@ -33,7 +33,7 @@ class ClassRoomResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
-            ->schema([
+            ->schema(fn (?ClassRoom $record) => [
                 Forms\Components\Select::make('academic_year_id')
                     ->label('Tahun Ajaran')
                     ->relationship('academicYear', 'name')
@@ -98,6 +98,16 @@ class ClassRoomResource extends Resource
                         'unique' => 'Guru ini sudah menjadi wali kelas di kelas lain.',
                     ])
                     ->helperText('Pilih guru yang akan menjadi wali kelas (opsional)'),
+
+                Forms\Components\Section::make('Jadwal Kelas')
+                    ->description('Kelola jadwal pelajaran untuk kelas ini.')
+                    ->collapsible()
+                    ->collapsed()
+                    ->visible($record !== null)
+                    ->schema([
+                        Forms\Components\Livewire::make(\App\Livewire\ClassSchedules::class, ['classRoom' => $record])
+                            ->key('class-schedules'),
+                    ]),
             ]);
     }
 

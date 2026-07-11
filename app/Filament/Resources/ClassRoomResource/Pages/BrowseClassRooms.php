@@ -9,6 +9,7 @@ use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 
 class BrowseClassRooms extends Page
 {
@@ -18,7 +19,9 @@ class BrowseClassRooms extends Page
 
     protected static ?string $title = 'Telusuri Kelas';
 
+    #[Url(as: 'grade', keep: true)]
     public ?int $selectedGrade = null;
+    #[Url(as: 'program', keep: true)]
     public ?int $selectedProgramId = null;
 
     public function mount(): void
@@ -78,7 +81,7 @@ class BrowseClassRooms extends Page
 
     public function resetSelection(string $level = 'all'): void
     {
-        if ($level === 'all' || $level === 'grade') {
+        if ($level === 'all') {
             $this->selectedGrade = null;
         }
         $this->selectedProgramId = null;

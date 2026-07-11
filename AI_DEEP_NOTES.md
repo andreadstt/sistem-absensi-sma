@@ -110,3 +110,15 @@ Bagian ini berisi analisis kode, potensi masalah, dan saran perbaikan.
 
 ## 2.6. Isu yang Telah Diselesaikan (per 2026-07-07)
 - **Konflik Jadwal (Bentrok):** Sebelumnya, tidak ada validasi untuk mencegah jadwal yang tumpang-tindih. Isu ini **telah diselesaikan** dengan menambahkan *custom validation rule* di `app/Filament/Resources/ScheduleResource.php`. Validasi ini sekarang menangani konflik guru dan konflik ruang kelas berdasarkan hari dan tumpang-tindih jam pelajaran (`time_slot`).
+
+
+## Rencana Fitur Mendatang (Belum Dikerjakan)
+
+### Kenaikan Kelas & Riwayat Siswa per Tahun Ajaran
+**Status:** Ditunda, prioritas rendah untuk saat ini.
+**Desain yang sudah disepakati:**
+- Tabel baru `student_enrollments` (student_id, class_room_id, academic_year_id, unique per siswa+tahun ajaran)
+- `students.class_room_id` tetap dipertahankan sebagai cache "kelas saat ini", disinkron otomatis
+- Fitur baru "Kenaikan Kelas" (Filament Custom Page): auto-mapping Grade+1 & Jurusan tetap, bisa dikoreksi manual per siswa
+- Siswa grade 12 dinonaktifkan (bukan pindah kelas), tidak perlu status "alumni" kompleks
+- Kelas tujuan harus sudah dibuat manual oleh admin dulu lewat ClassRoomResource

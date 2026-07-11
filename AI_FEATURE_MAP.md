@@ -1,5 +1,5 @@
 # AI Feature Map
-**Last verified:** 2026-07-07
+**Last verified:** 2026-07-11
 
 Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di source code. Gunakan ini sebagai titik awal untuk memahami di mana harus mencari dan memodifikasi kode. **Selalu verifikasi keberadaan file sebelum mengedit.**
 
@@ -17,7 +17,7 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
 - **Business Rules:**
     - Pengguna 'admin' diarahkan ke panel Filament (`/admin`).
     - Pengguna 'guru' diarahkan ke dashboard guru (`/guru/dashboard`).
-    - Pengguna baru (dibuat oleh admin) harus mengganti password saat login pertama, di-enforce oleh `ForceChangePasswordMiddleware`.
+    - Pengguna guru baru (dibuat dari proses approval) harus mengganti password saat login pertama, di-enforce oleh `ForceChangePasswordMiddleware`. **Catatan:** Middleware ini **hanya berlaku untuk role `guru`** — admin yang dibuat melalui fitur "Kelola Admin" (lihat Bagian 9) tidak terkena force-change-password.
 - **Analisis Dampak:** Perubahan pada auth sangat berisiko. Mempengaruhi akses ke seluruh aplikasi. Edit file di `app/Http/Controllers/Auth/` dan middleware terkait dengan sangat hati-hati.
 - **Task Mapping / Jika user berkata...**
     - *"Edit halaman login"*: Buka `resources/js/Pages/Auth/Login.vue` (frontend) dan `app/Http/Controllers/Auth/AuthenticatedSessionController.php` (backend).
@@ -181,3 +181,44 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
 - **Task Mapping / Jika user berkata...**
     - *"Edit dashboard admin"*: Buka `app/Providers/Filament/AdminPanelProvider.php` untuk mengubah widget. Jika ingin membuat widget baru, gunakan `php artisan make:filament-widget`.
     - *"Edit dashboard guru"*: Buka `app/Http/Controllers/Guru/DashboardController.php` untuk mengubah data, dan `resources/js/Pages/Guru/Dashboard.vue` untuk mengubah tampilan.
+
+---
+
+## 9. Kelola Admin (Admin Management) - Portal Admin
+
+- **Tujuan:** Admin mengelola akun user dengan role `admin` — membuat admin baru, mengedit data admin, dan menghapus admin (dengan safeguard).
+- **Lokasi File Kunci:**
+    - **Filament Resource:** `app/Filament/Resources/AdminResource.php` (form, tabel, query scope, delete safeguard).
+    - **Pages:** `app/Filament/Resources/AdminResource/Pages/` (`ListAdmins.php`, `CreateAdmin.php`, `EditAdmin.php`).
+    - **Model:** `app/Models/User.php` (di-scope ke `User::role('admin')` via Spatie).
+- **Business Rules:**
+    - Resource ini hanya menampilkan user yang memiliki role `admin` (override `getEloquentQuery()` dengan `->role('admin')`).
+    - **Form Create:** Nama, Email, Password (wajib diisi, minimal 8 karakter). Admin baru langsung bisa login tanpa force-change-password (`must_change_password = false`).
+    - **Form Edit:** Nama, Email, Password (opsional — kosongkan jika tidak ingin mengubah). Field password menggunakan `autocomplete='new-password'` untuk mencegah browser autofill.
+    - **Safeguard Admin Terakhir:** Sistem **menolak penghapusan** jika admin yang akan dihapus adalah satu-satunya admin tersisa. Validasi ini diterapkan di tiga tempat: delete action di tabel, bulk delete action, dan delete action di halaman edit. Pesan error: *"Tidak dapat menghapus admin terakhir di sistem."*
+    - Role `admin` di-assign otomatis via hook `afterCreate()` di `CreateAdmin.php`.
+- **Navigasi:** Menu "Kelola Admin" berada di group "Manajemen User" (sejajar dengan "Pendaftaran Guru"), `$navigationSort = 2`.
+- **Otorisasi:** Akses dikontrol oleh `AdminMiddleware` di level panel (semua resource di panel admin hanya bisa diakses oleh user dengan role `admin`). Tidak ada Policy khusus.
+- **Task Mapping / Jika user berkata...**
+    - *"Edit form data admin"*: Buka method `form()` di `app/Filament/Resources/AdminResource.php`.
+    - *"Ubah aturan penghapusan admin"*: Cari `before()` hook di `DeleteAction` pada `AdminResource.php` (tabel) dan `EditAdmin.php` (halaman edit).
+    - *"Tambah admin baru"*: Navigasi ke sidebar "Manajemen User" → "Kelola Admin" → tombol "Create".
+
+---
+
+## 10. Edit Profile Admin (Ganti Password) - Portal Admin
+
+- **Tujuan:** Admin yang sedang login dapat mengganti nama, email, dan password miliknya sendiri melalui halaman profile bawaan Filament, dengan validasi password saat ini.
+- **Lokasi File Kunci:**
+    - **Custom Profile Page:** `app/Filament/Pages/Auth/EditProfile.php` (extends `Filament\Pages\Auth\EditProfile`).
+    - **Registrasi di Panel:** `app/Providers/Filament/AdminPanelProvider.php` (baris `->profile(EditProfile::class)`).
+- **Business Rules:**
+    - Halaman profile diakses melalui menu user di pojok kanan atas panel admin.
+    - Form berisi: Nama, Email, Password Saat Ini, Password Baru, Konfirmasi Password Baru.
+    - **Validasi Current Password:** Field "Password Saat Ini" (`currentPassword`) **hanya muncul** saat admin mulai mengisi field "Password Baru" (menggunakan `->visible(fn (Get $get) => filled($get('password')))`). Validasi menggunakan `->currentPassword()` bawaan Filament/Laravel yang otomatis memverifikasi terhadap hash di database.
+    - **Tidak ada force-change-password untuk admin.** Ini keputusan desain final — berbeda dengan guru yang menggunakan `ForceChangePasswordMiddleware`.
+    - Fitur ini **hanya berlaku di panel admin** (`/admin`). Tidak memengaruhi alur login, profil, atau fungsionalitas apapun di Portal Guru.
+- **Task Mapping / Jika user berkata...**
+    - *"Ubah field di halaman profile admin"*: Override method yang sesuai (`getNameFormComponent()`, `getEmailFormComponent()`, dll.) di `app/Filament/Pages/Auth/EditProfile.php`.
+    - *"Nonaktifkan halaman profile admin"*: Hapus `->profile(EditProfile::class)` dari `app/Providers/Filament/AdminPanelProvider.php`.
+    - *"Tambah field baru di profile admin"*: Edit method `getForms()` di `app/Filament/Pages/Auth/EditProfile.php`, tambahkan komponen form baru ke array schema.

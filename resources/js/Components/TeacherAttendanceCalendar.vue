@@ -2,29 +2,18 @@
 import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
-    attendances: Array,
+    attendancesByDate: Array, // Array of { date, records, total_jadwal, total_hadir, total_tidak_hadir, aggregate_status }
     currentMonth: String, // Format: YYYY-MM
     isEditable: Boolean,
 })
 
-const emit = defineEmits(['update:attendance', 'month-change'])
+const emit = defineEmits(['date-click', 'month-change'])
 
 const getMonthDate = (monthValue) => {
     if (!monthValue) return new Date()
 
     const parsed = new Date(`${monthValue}-01`)
     return isNaN(parsed.getTime()) ? new Date() : parsed
-}
-
-const normalizeDate = (dateValue) => {
-    if (!dateValue) return ''
-
-    const parsed = new Date(dateValue)
-    if (!isNaN(parsed.getTime())) {
-        return parsed.toISOString().slice(0, 10)
-    }
-
-    return String(dateValue).slice(0, 10)
 }
 
 const currentDate = ref(getMonthDate(props.currentMonth))
@@ -35,13 +24,6 @@ watch(
         currentDate.value = getMonthDate(newMonth)
     }
 )
-
-const normalizedAttendances = computed(() => {
-    return (props.attendances || []).map((attendance) => ({
-        ...attendance,
-        date: normalizeDate(attendance.date),
-    }))
-})
 
 const daysInMonth = computed(() => {
     return new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + 1, 0).getDate()
@@ -69,25 +51,61 @@ const monthName = computed(() => {
     return `${months[currentDate.value.getMonth()]} ${currentDate.value.getFullYear()}`
 })
 
+/**
+ * Get all attendance data for a specific day (grouped record from backend).
+ * Returns null if no data exists for that day.
+ */
 const getAttendanceForDate = (day) => {
     if (!day) return null
     const dateStr = `${currentDate.value.getFullYear()}-${String(currentDate.value.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return normalizedAttendances.value.find(att => att.date === dateStr)
+    return (props.attendancesByDate || []).find(att => att.date === dateStr) || null
 }
 
-const getStatusColor = (status) => {
-    if (!status) return 'bg-gray-100'
-    return status === 'HADIR' ? 'bg-green-100' : 'bg-red-100'
+/**
+ * Determine background color based on aggregate status.
+ */
+const getStatusColor = (dayData) => {
+    if (!dayData) return 'bg-gray-100'
+    switch (dayData.aggregate_status) {
+        case 'ALL_HADIR': return 'bg-green-100'
+        case 'ALL_TIDAK_HADIR': return 'bg-red-100'
+        case 'CAMPURAN': return 'bg-orange-100'
+        default: return 'bg-gray-100'
+    }
 }
 
-const getStatusTextColor = (status) => {
-    if (!status) return 'text-gray-600'
-    return status === 'HADIR' ? 'text-green-700' : 'text-red-700'
+/**
+ * Determine text color based on aggregate status.
+ */
+const getStatusTextColor = (dayData) => {
+    if (!dayData) return 'text-gray-600'
+    switch (dayData.aggregate_status) {
+        case 'ALL_HADIR': return 'text-green-700'
+        case 'ALL_TIDAK_HADIR': return 'text-red-700'
+        case 'CAMPURAN': return 'text-orange-800'
+        default: return 'text-gray-600'
+    }
 }
 
-const getStatusBadgeColor = (status) => {
-    if (!status) return 'bg-gray-200 text-gray-700'
-    return status === 'HADIR' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+/**
+ * Get the status icon for the calendar cell.
+ */
+const getStatusIcon = (dayData) => {
+    if (!dayData) return ''
+    switch (dayData.aggregate_status) {
+        case 'ALL_HADIR': return '✓'
+        case 'ALL_TIDAK_HADIR': return '✗'
+        case 'CAMPURAN': return '!'
+        default: return ''
+    }
+}
+
+/**
+ * Get ratio text (e.g., "2/3") for a day.
+ */
+const getRatioText = (dayData) => {
+    if (!dayData || dayData.total_jadwal === 0) return ''
+    return `${dayData.total_hadir}/${dayData.total_jadwal}`
 }
 
 const previousMonth = () => {
@@ -104,6 +122,14 @@ const nextMonth = () => {
     currentDate.value = newDate
     const yearMonth = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}`
     emit('month-change', yearMonth)
+}
+
+const handleDayClick = (day) => {
+    if (!day) return
+    const dayData = getAttendanceForDate(day)
+    if (dayData) {
+        emit('date-click', dayData)
+    }
 }
 </script>
 
@@ -141,17 +167,18 @@ const nextMonth = () => {
                 <div v-for="(day, index) in calendarDays" :key="index"
                     class="aspect-square flex flex-col items-center justify-center rounded-lg border-2 transition-all cursor-pointer group"
                     :class="[
-                        day ? (getStatusColor(getAttendanceForDate(day)?.status) + ' border-transparent') : 'bg-gray-50 border-gray-200',
-                        day && isEditable ? 'hover:shadow-lg hover:scale-105' : ''
+                        day ? (getStatusColor(getAttendanceForDate(day)) + ' border-transparent') : 'bg-gray-50 border-gray-200',
+                        day && getAttendanceForDate(day) ? 'hover:shadow-lg hover:scale-105' : ''
                     ]"
-                    @click="day && $emit('update:attendance', getAttendanceForDate(day))"
+                    @click="handleDayClick(day)"
                 >
                     <div v-if="day" class="w-full h-full flex flex-col items-center justify-center p-1">
-                        <span class="font-bold text-lg" :class="getStatusTextColor(getAttendanceForDate(day)?.status)">
+                        <span class="font-bold text-lg" :class="getStatusTextColor(getAttendanceForDate(day))">
                             {{ day }}
                         </span>
-                        <span v-if="getAttendanceForDate(day)?.status" class="text-xs font-semibold" :class="getStatusTextColor(getAttendanceForDate(day)?.status)">
-                            {{ getAttendanceForDate(day)?.status === 'HADIR' ? '✓' : '✗' }}
+                        <!-- Ratio text (e.g., "2/3") -->
+                        <span v-if="getAttendanceForDate(day)" class="text-xs font-semibold" :class="getStatusTextColor(getAttendanceForDate(day))">
+                            {{ getRatioText(getAttendanceForDate(day)) }}
                         </span>
                     </div>
                 </div>
@@ -162,11 +189,15 @@ const nextMonth = () => {
         <div class="bg-gray-50 px-6 py-4 flex gap-6 flex-wrap">
             <div class="flex items-center gap-2">
                 <div class="w-4 h-4 bg-green-100 border-2 border-green-500 rounded"></div>
-                <span class="text-sm text-gray-700">Hadir</span>
+                <span class="text-sm text-gray-700">Semua Hadir</span>
             </div>
             <div class="flex items-center gap-2">
                 <div class="w-4 h-4 bg-red-100 border-2 border-red-500 rounded"></div>
-                <span class="text-sm text-gray-700">Tidak Hadir</span>
+                <span class="text-sm text-gray-700">Semua Tidak Hadir</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-orange-100 border-2 border-orange-500 rounded"></div>
+                <span class="text-sm text-gray-700">Campuran</span>
             </div>
             <div class="flex items-center gap-2">
                 <div class="w-4 h-4 bg-gray-100 border-2 border-gray-300 rounded"></div>

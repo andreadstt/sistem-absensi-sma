@@ -237,6 +237,10 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
     - **Command (Cron):** `app/Console/Commands/MarkAbsentTeachers.php` (berjalan tiap 10 menit via `bootstrap/app.php`).
     - **Filament Resource:** `app/Filament/Resources/TeacherAttendanceResource.php`.
     - **Kalender Admin:** `app/Livewire/AdminTeacherAttendanceCalendar.php` dan view `admin-teacher-attendance-calendar.blade.php`.
+        - **UI Kalender (Layered Architecture):**
+            - **Layer 1 (Grid Card):** Menampilkan daftar kelas di hari terpilih dalam bentuk Grid Card minimalis (hanya judul kelas).
+            - **Layer 2 (Detail Table):** Saat card kelas diklik, UI bertransisi ke tabel detail absensi guru dengan konfigurasi spesifik (`table-fixed`, text truncation, kolom `w-[50%]`, `w-[30%]`, `w-[20%]`).
+            - **Perbaikan Dark Mode:** Efek hover pada baris tabel disesuaikan, **membutuhkan kompilasi ulang** Filament custom theme (`npm run build`) untuk bekerja dengan baik.
     - **Konfigurasi:** `config/academic.php` (mengatur `teacher_attendance_buffer_minutes`) dan `config/app.php` (timezone).
     - **Pembatasan Controller:** `app/Http/Controllers/Guru/AbsensiController.php` (method `show` dan `store`).
     - **Dashboard Guru (UI):** `resources/js/Pages/Guru/Dashboard.vue`, `app/Http/Controllers/Guru/DashboardController.php`, dan `resources/js/composables/useDateTime.js` (untuk visualisasi tombol masuk).

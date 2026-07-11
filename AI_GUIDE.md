@@ -26,6 +26,9 @@ Jangan membaca banyak file sekaligus. Gunakan tool pencarian untuk menemukan fil
     - [ ] Apakah saya perlu membuat atau memperbarui test?
     - [ ] Apakah perubahan ini berpotensi merusak bagian lain dari aplikasi? (Lihat `AI_FEATURE_MAP.md` untuk analisis dampak).
 
+### 1.5. Rebuild Custom Filament Theme
+**ATURAN PENTING:** Setelah mengubah class Tailwind di file Blade/Livewire manapun yang dipakai di dalam panel admin Filament, **WAJIB** jalankan `npm run build` sebelum menganggap perubahan styling selesai — custom Filament theme (`resources/css/filament/admin/theme.css`) tidak otomatis ter-recompile hanya dari `npm run dev` untuk perubahan di file Blade.
+
 ---
 
 ## 2. Gambaran Umum Proyek

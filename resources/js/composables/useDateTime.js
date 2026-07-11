@@ -91,3 +91,21 @@ export const getTodayScheduleForClass = (classData, currentDayNum) => {
         return parseInt(dayNum) === currentDayNum;
     });
 };
+
+// Check if current time falls within schedule time slot + buffer
+export const isTimeWindowActive = (timeSlot, bufferMinutes = 20) => {
+    if (!timeSlot) return true;
+    const parts = timeSlot.split('-');
+    if (parts.length !== 2) return true;
+
+    const now = new Date();
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const [startH, startM] = parts[0].trim().split(':').map(Number);
+    const startTotalMinutes = startH * 60 + startM;
+
+    const [endH, endM] = parts[1].trim().split(':').map(Number);
+    const endTotalMinutes = endH * 60 + endM + parseInt(bufferMinutes);
+
+    return currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+};

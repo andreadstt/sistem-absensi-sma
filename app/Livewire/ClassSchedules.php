@@ -11,24 +11,27 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Illuminate\Database\Eloquent\Collection;
-use Livewire\Component;
+use Filament\Widgets\Widget;
 
-class ClassSchedules extends Component implements HasForms, HasActions
+class ClassSchedules extends Widget implements HasForms, HasActions
 {
+    protected int | string | array $columnSpan = 'full';
     use InteractsWithForms;
     use InteractsWithActions;
 
-    public ClassRoom $classRoom;
+    public ?ClassRoom $record = null;
     public ?int $openDay = null;
 
-    public function mount(ClassRoom $classRoom): void
+    public function mount(?ClassRoom $classRoom = null, ?ClassRoom $record = null): void
     {
-        $this->classRoom = $classRoom;
+        $this->record = $record ?? $classRoom ?? $this->record;
     }
 
     public function getSchedulesGroupedByDay(): array
     {
-        return $this->classRoom->schedules()
+        if (! $this->record) return [];
+
+        return $this->record->schedules()
             ->with(['teacher', 'subject'])
             ->orderBy('time_slot')
             ->get()
@@ -47,20 +50,23 @@ class ClassSchedules extends Component implements HasForms, HasActions
             ->label('Tambah Jadwal')
             ->form(ScheduleResource::getFormSchema())
             ->model(Schedule::class)
+            ->mountUsing(function (\Filament\Forms\Form $form, array $arguments) {
+                $form->fill([
+                    'class_room_id' => $this->record?->id,
+                    'weekday' => $arguments['weekday'] ?? null,
+                ]);
+            })
             ->action(function (array $data) {
-                $this->classRoom->schedules()->create($data);
+                $this->record->schedules()->create($data);
             });
     }
     
-    public function editAction(): Action
+    public function editAction(): \Filament\Actions\EditAction
     {
-        return Action::make('edit')
+        return \Filament\Actions\EditAction::make('edit')
             ->label('Edit')
-            ->form(ScheduleResource::getFormSchema())
-            ->model(Schedule::class)
-            ->action(function (Schedule $record, array $data) {
-                $record->update($data);
-            });
+            ->record(fn (array $arguments) => Schedule::find($arguments['record']))
+            ->form(ScheduleResource::getFormSchema());
     }
 
     public function deleteAction(): Action
@@ -76,12 +82,12 @@ class ClassSchedules extends Component implements HasForms, HasActions
     public function openCreateModal(int $weekday): void
     {
         $this->mountAction('create', [
-            'class_room_id' => $this->classRoom->id,
+            'class_room_id' => $this->record?->id,
             'weekday' => $weekday,
         ]);
     }
 
-    public function render()
+    public function render(): \Illuminate\Contracts\View\View
     {
         return view('livewire.class-schedules', [
             'schedulesByDay' => $this->getSchedulesGroupedByDay(),

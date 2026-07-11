@@ -30,13 +30,18 @@ class EditClassRoom extends EditRecord
                 $fallbackUrl = $browseUrl ?? $indexUrl;
 
                 if (is_null($referer) || str_contains($referer, '/edit') || str_contains($referer, '/create')) {
-                    // if #[Url] is implemented, the index URL will be a problem.
-                    // The best UX is to go back to the browse page.
                     return $browseUrl;
                 }
 
                 return $referer;
             })
             ->icon('heroicon-o-arrow-left');
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            \App\Livewire\ClassSchedules::class,
+        ];
     }
 }

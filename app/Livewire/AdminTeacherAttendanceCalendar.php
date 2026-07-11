@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Schedule;
 use App\Models\Teacher;
 use App\Models\TeacherAttendance;
 use Carbon\Carbon;
@@ -85,11 +86,12 @@ class AdminTeacherAttendanceCalendar extends Component
             $query->where('teacher_id', $this->selectedTeacherId);
         }
 
-        return $query->with('teacher')->get()->groupBy('teacher_id')->map(function ($records) {
-            return $records->keyBy(function ($record) {
+        // Group by date, collecting all records per date
+        return $query->with(['teacher', 'schedule.subject', 'schedule.classRoom'])
+            ->get()
+            ->groupBy(function ($record) {
                 return Carbon::parse($record->date)->format('Y-m-d');
             });
-        });
     }
 
     public function getCalendarDaysProperty()
@@ -120,14 +122,24 @@ class AdminTeacherAttendanceCalendar extends Component
     {
         $statuses = [];
 
-        foreach ($attendanceData as $teacherId => $records) {
-            if (isset($records[$date])) {
-                $statuses[] = [
-                    'teacher_name' => $records[$date]->teacher?->name ?? 'Unknown',
-                    'status' => $records[$date]->status,
-                    'notes' => $records[$date]->notes,
-                ];
+        if (!isset($attendanceData[$date])) {
+            return $statuses;
+        }
+
+        foreach ($attendanceData[$date] as $record) {
+            $scheduleName = '';
+            if ($record->schedule) {
+                $subject = $record->schedule->subject->name ?? '-';
+                $class = $record->schedule->classRoom->name ?? '-';
+                $scheduleName = "{$subject} ({$class}) {$record->schedule->time_slot}";
             }
+
+            $statuses[] = [
+                'teacher_name' => $record->teacher?->name ?? 'Unknown',
+                'status' => $record->status,
+                'notes' => $record->notes,
+                'schedule_name' => $scheduleName,
+            ];
         }
 
         return $statuses;
@@ -136,17 +148,21 @@ class AdminTeacherAttendanceCalendar extends Component
     public function getTodayStatsProperty()
     {
         $today = now()->format('Y-m-d');
-        $totalTeachers = Teacher::count();
+        $todayWeekday = now()->dayOfWeekIso;
+
+        // Total schedules for today (all teachers' schedules on this weekday)
+        $totalSchedulesToday = Schedule::where('weekday', $todayWeekday)->count();
         
         $todayRecords = TeacherAttendance::whereDate('date', $today)->get();
         $totalHadir = $todayRecords->where('status', 'HADIR')->count();
         $totalTidakHadir = $todayRecords->where('status', 'TIDAK_HADIR')->count();
 
         return [
-            'total_guru' => $totalTeachers,
+            'total_jadwal' => $totalSchedulesToday,
             'total_hadir' => $totalHadir,
             'total_tidak_hadir' => $totalTidakHadir,
-            'percentage' => $totalTeachers > 0 ? round(($totalHadir / $totalTeachers) * 100, 1) : 0,
+            'total_tercatat' => $todayRecords->count(),
+            'percentage' => $totalSchedulesToday > 0 ? round(($totalHadir / $totalSchedulesToday) * 100, 1) : 0,
         ];
     }
 
@@ -156,10 +172,9 @@ class AdminTeacherAttendanceCalendar extends Component
         $totalHadir = 0;
         $totalTidakHadir = 0;
         $totalRecords = 0;
-        $totalTeachers = Teacher::count();
 
-        foreach ($attendanceData as $records) {
-            foreach ($records as $record) {
+        foreach ($attendanceData as $dateRecords) {
+            foreach ($dateRecords as $record) {
                 $totalRecords++;
                 if ($record->status === 'HADIR') {
                     $totalHadir++;
@@ -170,7 +185,7 @@ class AdminTeacherAttendanceCalendar extends Component
         }
 
         return [
-            'total_guru' => $totalTeachers,
+            'total_records' => $totalRecords,
             'total_hadir' => $totalHadir,
             'total_tidak_hadir' => $totalTidakHadir,
             'percentage' => $totalRecords > 0 ? round(($totalHadir / $totalRecords) * 100, 1) : 0,
@@ -183,19 +198,37 @@ class AdminTeacherAttendanceCalendar extends Component
             return [];
         }
 
-        $query = TeacherAttendance::with(['teacher.schedules' => function ($q) {
-            $parsedDate = Carbon::parse($this->selectedDate);
-            $q->where('weekday', $parsedDate->dayOfWeekIso)
-              ->with(['subject', 'classRoom'])
-              ->orderBy('time_slot');
-        }])
+        $query = TeacherAttendance::with(['teacher', 'schedule.subject', 'schedule.classRoom'])
             ->where('date', $this->selectedDate);
 
         if ($this->selectedTeacherId) {
             $query->where('teacher_id', $this->selectedTeacherId);
         }
 
-        return $query->orderBy('date')->get();
+        // Group by class_room_id (safe unique key), then map to structured array per class
+        return $query->get()
+            ->groupBy(fn ($record) => $record->schedule?->class_room_id ?? 0)
+            ->sortBy(fn ($records, $classRoomId) => $records->first()?->schedule?->classRoom?->full_name ?? 'zzz')
+            ->map(function ($records, $classRoomId) {
+                $firstRecord = $records->first();
+                $classRoom = $firstRecord?->schedule?->classRoom;
+                return [
+                    'class_room_id'   => $classRoomId,
+                    'class_name'      => $classRoom?->full_name ?? $classRoom?->name ?? '(Kelas Tidak Diketahui)',
+                    'total_hadir'     => $records->where('status', 'HADIR')->count(),
+                    'total_not_hadir' => $records->where('status', '!=', 'HADIR')->count(),
+                    'records'         => $records->map(fn ($r) => [
+                        'teacher_name' => $r->teacher?->name ?? 'Unknown',
+                        'subject_name' => $r->schedule?->subject?->name ?? '-',
+                        'time_slot'    => $r->schedule?->time_slot ?? '-',
+                        'status'       => $r->status,
+                        'notes'        => $r->notes,
+                        'recorded_at'  => $r->created_at?->format('H:i') ?? '-',
+                    ])->values()->toArray(),
+                ];
+            })
+            ->values()
+            ->toArray();
     }
 
     public function render()
@@ -232,3 +265,4 @@ class AdminTeacherAttendanceCalendar extends Component
         ]);
     }
 }
+

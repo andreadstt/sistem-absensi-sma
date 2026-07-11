@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         //
     })
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
+        $schedule->command('teachers:mark-absent')->everyTenMinutes();
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+

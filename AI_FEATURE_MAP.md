@@ -126,23 +126,27 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
 
 - **Tujuan:** Admin mengelola data-data inti akademik seperti Kelas, Mata Pelajaran, Tahun Ajaran, Program, dan membuat Jadwal.
 - **Lokasi File Kunci (Semua di dalam `app/Filament/Resources/`):**
-    - `ClassRoomResource.php`: Manajemen Kelas. **Catatan:** Halaman daftar (index) standar telah diganti dengan halaman navigasi *drill-down* kustom untuk mempermudah penelusuran berdasarkan Tingkat dan Jurusan. Form CRUD (Create/Edit) tetap tidak berubah.
+    - `ClassRoomResource.php`: Manajemen Kelas. **Catatan:** Halaman daftar (index) standar telah diganti dengan halaman navigasi *drill-down* kustom untuk mempermudah penelusuran berdasarkan Tingkat dan Jurusan. Form CRUD (Create/Edit) difokuskan murni untuk data kelas itu sendiri.
     - `ClassRoomResource/Pages/BrowseClassRooms.php`: Logika untuk halaman custom navigasi kelas.
+    - `ClassRoomResource/Pages/EditClassRoom.php`: Logika halaman edit kelas. Menampung *Footer Widget* untuk mengelola jadwal kelas (`ClassSchedules`).
     - `views/filament/resources/class-room-resource/pages/browse-class-rooms.blade.php`: Tampilan untuk halaman custom navigasi kelas.
     - `SubjectResource.php`: Manajemen Mata Pelajaran.
     - `AcademicYearResource.php`: Manajemen Tahun Ajaran.
     - `ProgramResource.php`: Manajemen Program/Jurusan.
     - `TeachingAssignmentResource.php`: Menghubungkan Guru, Kelas, dan Mata Pelajaran. Ini adalah "jembatan" sebelum jadwal dibuat.
     - `ScheduleResource.php`: Membuat jadwal pelajaran mingguan berdasarkan `TeachingAssignment`.
+    - **Widget Jadwal Khusus:** `app/Livewire/ClassSchedules.php` dan tampilannya `resources/views/livewire/class-schedules.blade.php`.
 - **Business Rules:**
     - Alur kerja: Admin membuat `Schedule` secara langsung. Sistem secara otomatis membuat `TeachingAssignment` (penugasan) di belakang layar jika belum ada.
+    - **Manajemen Jadwal di Halaman Kelas:** Pada halaman Edit Kelas (`/admin/class-rooms/{id}/edit`), jadwal dikelola menggunakan Widget khusus di bagian bawah (*Footer Widget*). Komponen ini secara pintar *meng-autofill* form jadwal (mengisi `class_room_id` dan `weekday`) saat tombol "Tambah Jadwal" ditekan di hari tertentu.
     - **Validasi Anti-Bentrok:** Sistem secara otomatis melakukan validasi untuk mencegah konflik saat menyimpan jadwal:
         - **Konflik Guru:** Jadwal tidak akan tersimpan jika guru yang sama sudah memiliki jadwal lain di hari dan rentang waktu yang tumpang-tindih.
         - **Konflik Ruang Kelas:** Jadwal tidak akan tersimpan jika ruang kelas yang sama sudah digunakan oleh jadwal lain di hari dan rentang waktu yang tumpang-tindih.
-- **Analisis Dampak:** Fitur-fitur ini sangat saling terkait. Mengubah `TeachingAssignment` akan berdampak pada `Schedule` dan `Attendance`.
+- **Analisis Dampak:** Fitur-fitur ini sangat saling terkait. Mengubah `TeachingAssignment` akan berdampak pada `Schedule` dan `Attendance`. Modifikasi antarmuka manajemen jadwal pada level kelas harus dilakukan pada komponen `ClassSchedules`, bukan di form `ClassRoomResource`.
 - **Task Mapping / Jika user berkata...**
-    - *"Edit cara jadwal dibuat"*: Buka `app/Filament/Resources/ScheduleResource.php`.
+    - *"Edit cara jadwal dibuat secara umum"*: Buka `app/Filament/Resources/ScheduleResource.php`.
     - *"Ganti wali kelas untuk 7A"*: Telusuri kelas dari menu `Kelas`, pilih Tingkat dan Jurusan yang sesuai, lalu klik kelas yang dituju untuk masuk ke halaman edit.
+    - *"Ubah tampilan/logika manajemen jadwal di dalam halaman edit kelas"*: Buka `app/Livewire/ClassSchedules.php` (logika) dan view-nya `class-schedules.blade.php`.
     - *"Ubah tampilan penelusuran kelas"*: Buka `app/Filament/Resources/ClassRoomResource/Pages/BrowseClassRooms.php` (logika) dan `resources/views/filament/resources/class-room-resource/pages/browse-class-rooms.blade.php` (tampilan).
 
 ---
@@ -222,3 +226,28 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
     - *"Ubah field di halaman profile admin"*: Override method yang sesuai (`getNameFormComponent()`, `getEmailFormComponent()`, dll.) di `app/Filament/Pages/Auth/EditProfile.php`.
     - *"Nonaktifkan halaman profile admin"*: Hapus `->profile(EditProfile::class)` dari `app/Providers/Filament/AdminPanelProvider.php`.
     - *"Tambah field baru di profile admin"*: Edit method `getForms()` di `app/Filament/Pages/Auth/EditProfile.php`, tambahkan komponen form baru ke array schema.
+
+---
+
+## 11. Kehadiran Guru & Pembatasan Waktu (Teacher Attendance per Schedule)
+
+- **Tujuan:** Mencatat kehadiran guru secara spesifik per-jadwal mengajar (bukan per-hari), membatasi akses form absensi hanya pada jam mengajar, dan menandai guru otomatis "Tidak Hadir" jika lupa mengisi.
+- **Lokasi File Kunci:**
+    - **Observer:** `app/Observers/AttendanceObserver.php` (mencatat kehadiran guru otomatis saat guru mensubmit absensi siswa).
+    - **Command (Cron):** `app/Console/Commands/MarkAbsentTeachers.php` (berjalan tiap 10 menit via `bootstrap/app.php`).
+    - **Filament Resource:** `app/Filament/Resources/TeacherAttendanceResource.php`.
+    - **Kalender Admin:** `app/Livewire/AdminTeacherAttendanceCalendar.php` dan view `admin-teacher-attendance-calendar.blade.php`.
+    - **Konfigurasi:** `config/academic.php` (mengatur `teacher_attendance_buffer_minutes`) dan `config/app.php` (timezone).
+    - **Pembatasan Controller:** `app/Http/Controllers/Guru/AbsensiController.php` (method `show` dan `store`).
+    - **Dashboard Guru (UI):** `resources/js/Pages/Guru/Dashboard.vue`, `app/Http/Controllers/Guru/DashboardController.php`, dan `resources/js/composables/useDateTime.js` (untuk visualisasi tombol masuk).
+- **Business Rules:**
+    - **Zona Waktu Penting:** Seluruh logika pembatasan waktu dan command absen otomatis sangat bergantung pada konfigurasi timezone. `config/app.php` harus diset ke `Asia/Jakarta` (WIB) atau sesuai lokal user, BUKAN `UTC`.
+    - **Granularitas:** 1 record kehadiran guru = 1 guru, 1 jadwal (`schedule_id`), 1 tanggal. Constraint unik di database mencegah duplikasi untuk kombinasi ini.
+    - **Disambiguasi (Double Period):** Jika guru mengajar kelas yang sama, mapel yang sama, di hari yang sama pada jam berbeda (double period), Controller dan Observer akan membandingkan waktu submit (`now()`) dengan `time_slot` masing-masing jadwal untuk secara cerdas memilih jadwal yang sedang/paling dekat berlangsung.
+    - **Time Window Restriction:** Guru hanya bisa membuka form absensi dari frontend dalam rentang waktu: `Waktu Mulai Jadwal` sampai dengan `Waktu Selesai Jadwal + Buffer Menit` (default 20 menit).
+    - **Visualisasi Tombol (UI):** Di Dashboard Guru, tombol "Masuk" akan otomatis berwarna **hijau (aktif)** hanya jika jam saat ini berada di dalam *time window*. Jika belum mulai atau sudah lewat batas waktu, tombol akan otomatis berwarna **abu-abu (disabled)** secara *real-time*.
+    - **Auto-Mark Absent:** Command `teachers:mark-absent` berjalan di background. Jika batas waktu (end_time + buffer) sebuah jadwal sudah lewat dan guru belum mengisi absensi, sistem otomatis membuat record "TIDAK_HADIR".
+- **Task Mapping / Jika user berkata...**
+    - *"Ubah waktu toleransi/buffer pengisian absensi"*: Ubah nilai `teacher_attendance_buffer_minutes` di `config/academic.php`. Nilai ini akan di-*pass* otomatis ke Frontend via `DashboardController`.
+    - *"Matikan fitur otomatis alpa untuk guru"*: Hapus atau comment baris `->command('teachers:mark-absent')` di `bootstrap/app.php`.
+    - *"Ubah logika tombol abu-abu/hijau di dashboard"*: Buka fungsi `isTimeWindowActive` di `resources/js/composables/useDateTime.js` dan edit view `Dashboard.vue`.

@@ -82,31 +82,7 @@
                 .dark .ta-calendar .ta-teacher-name { color: rgb(156 163 175); }
                 .ta-calendar .ta-more { font-size: 0.625rem; color: rgb(156 163 175); font-weight: 500; }
                 .ta-calendar .ta-libur { display: flex; align-items: center; justify-content: center; height: 2rem; font-size: 0.625rem; color: rgb(156 163 175); font-style: italic; }
-                .ta-calendar .ta-modal-backdrop {
-                    position: fixed; inset: 0; z-index: 50;
-                    display: flex; align-items: center; justify-content: center;
-                    padding: 1rem; background: rgba(17, 24, 39, 0.75);
-                }
-                .ta-calendar .ta-modal {
-                    width: 100%; max-width: 32rem; max-height: 90vh; overflow: auto;
-                    border-radius: 0.75rem;
-                    background: rgb(255 255 255);
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-                }
-                .dark .ta-calendar .ta-modal { background: rgb(17 24 39); }
-                .ta-calendar .ta-modal-header {
-                    display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
-                    padding: 1rem 1.5rem; border-bottom: 1px solid rgb(229 231 235);
-                }
-                .dark .ta-calendar .ta-modal-header { border-bottom-color: rgba(255, 255, 255, 0.1); }
-                .ta-calendar .ta-modal-title { font-size: 1.125rem; font-weight: 600; }
-                .ta-calendar .ta-modal-subtitle { font-size: 0.875rem; color: rgb(107 114 128); margin-top: 0.125rem; }
                 .ta-calendar .ta-modal-body { padding: 1rem 1.5rem; }
-                .ta-calendar .ta-modal-footer {
-                    display: flex; justify-content: flex-end; gap: 0.5rem;
-                    padding: 0.75rem 1.5rem; border-top: 1px solid rgb(229 231 235);
-                }
-                .dark .ta-calendar .ta-modal-footer { border-top-color: rgba(255, 255, 255, 0.1); }
                 .ta-calendar .ta-detail-item {
                     display: flex; align-items: center; gap: 0.75rem;
                     padding: 0.75rem; border-radius: 0.5rem; border: 1px solid;
@@ -141,17 +117,17 @@
     <h3 class="text-lg font-bold">Ringkasan Hari Ini</h3>
     <x-filament::grid :default="2" :md="4" class="gap-4">
         <x-filament::section compact>
-            <div class="ta-stat-label">Total Guru</div>
-            <div class="ta-stat-value">{{ $todayStats['total_guru'] }}</div>
+            <div class="ta-stat-label">Total Jadwal Hari Ini</div>
+            <div class="ta-stat-value">{{ $todayStats['total_jadwal'] }}</div>
         </x-filament::section>
 
         <x-filament::section compact>
-            <div class="ta-stat-label">Hadir Hari Ini</div>
+            <div class="ta-stat-label">Jadwal Hadir</div>
             <div class="ta-stat-value ta-stat-value--success">{{ $todayStats['total_hadir'] }}</div>
         </x-filament::section>
 
         <x-filament::section compact>
-            <div class="ta-stat-label">Tidak Hadir Hari Ini</div>
+            <div class="ta-stat-label">Jadwal Tidak Hadir</div>
             <div class="ta-stat-value ta-stat-value--danger">{{ $todayStats['total_tidak_hadir'] }}</div>
         </x-filament::section>
 
@@ -165,8 +141,8 @@
     <h3 class="text-lg font-bold mt-2">Ringkasan Bulan Ini</h3>
     <x-filament::grid :default="2" :md="4" class="gap-4">
         <x-filament::section compact>
-            <div class="ta-stat-label">Total Guru</div>
-            <div class="ta-stat-value">{{ $monthlyStats['total_guru'] }}</div>
+            <div class="ta-stat-label">Total Record</div>
+            <div class="ta-stat-value">{{ $monthlyStats['total_records'] }}</div>
         </x-filament::section>
 
         <x-filament::section compact>
@@ -319,20 +295,22 @@
         </div>
     </x-filament::section>
 
-    {{-- Detail Section (Shown below calendar instead of modal) --}}
+    {{-- Detail Section (Accordion per Kelas) --}}
     @if ($showDetailModal && $selectedDate)
         <div id="attendance-detail-section" class="mt-4">
             <x-filament::section>
                 <x-slot name="heading">
                     <div class="flex items-center justify-between w-full">
                         <div>
-                            Detail Kehadiran - 
                             @php
                                 $parsedDate = \Carbon\Carbon::parse($selectedDate);
                                 $dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                                $monthNamesId = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+                                $monthNamesId = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
                             @endphp
-                            {{ $dayNames[$parsedDate->dayOfWeek] }}, {{ $parsedDate->day }} {{ $monthNamesId[$parsedDate->month] }} {{ $parsedDate->year }}
+                            <span class="font-semibold">Detail Kehadiran Guru</span>
+                            <span class="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                                {{ $dayNames[$parsedDate->dayOfWeek] }}, {{ $parsedDate->day }} {{ $monthNamesId[$parsedDate->month] }} {{ $parsedDate->year }}
+                            </span>
                         </div>
                         <x-filament::icon-button
                             color="gray"
@@ -343,100 +321,149 @@
                     </div>
                 </x-slot>
 
-                <div class="ta-modal-body px-0 py-2">
-                    @if (count($selectedDateDetails) > 0)
-                        @foreach ($selectedDateDetails as $detail)
-                            <div @class([
-                                'ta-detail-item',
-                                'ta-detail-item--success' => $detail->status === 'HADIR',
-                                'ta-detail-item--danger' => $detail->status !== 'HADIR',
-                            ])>
-                                <div @class([
-                                    'ta-detail-icon',
-                                    'ta-detail-icon--success' => $detail->status === 'HADIR',
-                                    'ta-detail-icon--danger' => $detail->status !== 'HADIR',
-                                ])>
-                                    @if ($detail->status === 'HADIR')
-                                        <x-filament::icon icon="heroicon-m-check" class="h-5 w-5" />
-                                    @else
-                                        <x-filament::icon icon="heroicon-m-x-mark" class="h-5 w-5" />
-                                    @endif
+                @if (count($selectedDateDetails) > 0)
+                    @php
+                        $totalHadirAll   = collect($selectedDateDetails)->sum('total_hadir');
+                        $totalTHAll      = collect($selectedDateDetails)->sum('total_not_hadir');
+                        $totalRecAll     = $totalHadirAll + $totalTHAll;
+                    @endphp
+
+                    {{-- Alpine.js: 2-layer grid → detail --}}
+                    <div
+                        x-data="{
+                            search: '',
+                            selectedClass: null,
+                            selectClass(classData) {
+                                this.selectedClass = classData;
+                                this.search = '';
+                            },
+                            back() { this.selectedClass = null; },
+                            matches(name) {
+                                return this.search.trim() === '' || name.toLowerCase().includes(this.search.trim().toLowerCase());
+                            }
+                        }"
+                    >
+                        {{-- Header Row: Title & Search --}}
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4" x-show="selectedClass === null">
+                            <div class="font-bold text-gray-700 dark:text-gray-300 text-lg">KELAS :</div>
+                            
+                            {{-- Search input (right aligned) --}}
+                            <div class="relative max-w-xs w-full sm:w-auto">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <x-filament::icon icon="heroicon-m-magnifying-glass" class="h-4 w-4 text-gray-400" />
                                 </div>
-
-                                <div class="ta-detail-main">
-                                    <div class="flex items-center justify-between">
-                                        <div class="ta-detail-name">{{ $detail->teacher?->name ?? 'Unknown' }}</div>
-                                        <div class="text-xs text-gray-500">
-                                            Dicatat: {{ $detail->created_at ? $detail->created_at->format('H:i') : '-' }}
-                                        </div>
-                                    </div>
-                                    
-                                    <div @class([
-                                        'ta-detail-status',
-                                        'ta-detail-status--success' => $detail->status === 'HADIR',
-                                        'ta-detail-status--danger' => $detail->status !== 'HADIR',
-                                    ])>
-                                        {{ $detail->status === 'HADIR' ? 'Hadir' : 'Tidak Hadir' }}
-                                    </div>
-
-                                    @if ($detail->teacher && $detail->teacher->schedules->count() > 0)
-                                        <div class="mt-2 space-y-1">
-                                            <div class="text-xs font-semibold text-gray-600 dark:text-gray-400">Jadwal Mengajar:</div>
-                                            @foreach ($detail->teacher->schedules as $schedule)
-                                                <div class="text-xs flex items-start gap-1">
-                                                    <x-filament::icon icon="heroicon-m-clock" class="h-3 w-3 mt-0.5 text-gray-400" />
-                                                    <span>
-                                                        <span class="font-medium">{{ $schedule->subject->name ?? 'Mata Pelajaran' }}</span> di 
-                                                        <span class="font-medium">{{ $schedule->classRoom->name ?? 'Kelas' }}</span> 
-                                                        ({{ $schedule->time_slot }})
-                                                    </span>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @elseif ($detail->teacher && $detail->teacher->schedules->count() === 0)
-                                        <div class="mt-2 text-xs text-gray-500 italic">
-                                            Tidak ada jadwal mengajar pada hari ini.
-                                        </div>
-                                    @endif
-
-                                    @if ($detail->notes)
-                                        <div class="ta-detail-notes mt-2 border-t border-gray-200 dark:border-gray-700 pt-1">
-                                            <span class="font-medium">Catatan:</span> {{ $detail->notes }}
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <x-filament::badge :color="$detail->status === 'HADIR' ? 'success' : 'danger'">
-                                    {{ $detail->status === 'HADIR' ? 'H' : 'TH' }}
-                                </x-filament::badge>
-                            </div>
-                        @endforeach
-
-                        <div class="ta-summary">
-                            <div class="ta-summary-row">
-                                <span>Total guru tercatat:</span>
-                                <strong>{{ count($selectedDateDetails) }}</strong>
-                            </div>
-                            <div class="ta-summary-row">
-                                <span class="ta-detail-status--success">Hadir:</span>
-                                <strong class="ta-detail-status--success">
-                                    {{ collect($selectedDateDetails)->where('status', 'HADIR')->count() }}
-                                </strong>
-                            </div>
-                            <div class="ta-summary-row">
-                                <span class="ta-detail-status--danger">Tidak Hadir:</span>
-                                <strong class="ta-detail-status--danger">
-                                    {{ collect($selectedDateDetails)->where('status', 'TIDAK_HADIR')->count() }}
-                                </strong>
+                                <input
+                                    type="text"
+                                    x-model="search"
+                                    placeholder="Cari nama kelas..."
+                                    class="block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-1.5 pl-9 pr-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                                />
                             </div>
                         </div>
-                    @else
-                        <div class="ta-empty">Belum ada data kehadiran untuk tanggal ini.</div>
-                    @endif
-                </div>
+
+                        {{-- ── LAYER 1: Grid Card View ── --}}
+                        <div x-show="selectedClass === null" x-transition>
+
+                            {{-- Grid (scrollable) --}}
+                            <div class="max-h-[60vh] overflow-y-auto pr-1">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                                    @foreach ($selectedDateDetails as $classData)
+                                        <button
+                                            type="button"
+                                            x-show="matches(@js($classData['class_name']))"
+                                            x-transition
+                                            class="group flex flex-col items-center justify-center gap-3 p-6 bg-white rounded-lg shadow-md hover:shadow-xl dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 w-full text-center min-h-[120px] sm:min-h-[140px]"
+                                            @click="selectClass(@js($classData))"
+                                        >
+                                            {{-- Class name --}}
+                                            <span class="text-xl font-bold text-primary-600 dark:text-primary-400 leading-snug w-full text-center">
+                                                {{ $classData['class_name'] }}
+                                            </span>
+
+
+                                        </button>
+                                    @endforeach
+
+                                </div>
+
+                                {{-- Empty search state --}}
+                                <div
+                                    x-show="search.trim() !== '' && !({{ collect($selectedDateDetails)->map(fn($c) => "matches(" . \Illuminate\Support\Js::from($c['class_name']) . ")")->join(' || ') }})"
+                                    class="py-8 text-center text-sm text-gray-400 dark:text-gray-500 col-span-full"
+                                >
+                                    Tidak ada kelas yang cocok dengan "<span x-text="search"></span>".
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ── LAYER 2: Class Detail View ── --}}
+                        <div x-show="selectedClass !== null" x-transition>
+
+                            {{-- Back button + class title --}}
+                            <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                                <button
+                                    type="button"
+                                    @click="back()"
+                                    class="inline-flex flex-shrink-0 items-center justify-center w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-primary-50 dark:hover:bg-primary-900/50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                    title="Kembali ke daftar kelas"
+                                >
+                                    <x-filament::icon icon="heroicon-m-arrow-left" class="w-5 h-5" />
+                                </button>
+                                <div>
+                                    <h3 class="text-xl font-bold text-primary-600 dark:text-primary-400 leading-tight" x-text="selectedClass?.class_name ?? ''"></h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Jadwal Pelajaran & Kehadiran Guru</p>
+                                </div>
+                            </div>
+
+                            {{-- Detail table (scrollable) --}}
+                            <div class="max-h-[60vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 max-w-4xl">
+                                <table class="w-full text-sm table-fixed">
+                                    <thead class="sticky top-0 z-10">
+                                        <tr class="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                            <th class="px-4 py-3 text-left w-[50%]">Jadwal Pelajaran</th>
+                                            <th class="px-4 py-3 text-left w-[30%]">Guru</th>
+                                            <th class="px-4 py-3 text-center w-[20%]">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
+                                        <template x-for="rec in selectedClass?.records ?? []" :key="rec.time_slot + rec.teacher_name">
+                                            <tr>
+                                                <td class="px-4 py-3 overflow-hidden">
+                                                    <div class="font-medium text-gray-800 dark:text-gray-200 truncate" :title="rec.subject_name" x-text="rec.subject_name"></div>
+                                                    <div class="text-xs text-gray-400 truncate" :title="rec.time_slot" x-text="rec.time_slot"></div>
+                                                </td>
+                                                <td class="px-4 py-3 text-gray-700 dark:text-gray-300 overflow-hidden">
+                                                    <div class="truncate" :title="rec.teacher_name" x-text="rec.teacher_name"></div>
+                                                </td>
+                                                <td class="px-4 py-3 text-center overflow-hidden">
+                                                    <span
+                                                        :class="rec.status === 'HADIR'
+                                                            ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                                                            : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300'"
+                                                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
+                                                        x-text="rec.status === 'HADIR' ? 'Hadir' : 'Tidak Hadir'"
+                                                    ></span>
+                                                    <div x-show="rec.notes" class="mt-1 text-xs text-gray-400 italic truncate" :title="rec.notes" x-text="rec.notes"></div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                @else
+                    <div class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+                        Belum ada data kehadiran untuk tanggal ini.
+                    </div>
+                @endif
             </x-filament::section>
         </div>
-        
+
         <script>
             document.addEventListener('livewire:initialized', () => {
                 Livewire.on('scrollToDetail', () => {
@@ -451,3 +478,4 @@
         </script>
     @endif
 </div>
+

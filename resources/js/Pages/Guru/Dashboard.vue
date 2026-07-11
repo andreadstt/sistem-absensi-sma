@@ -2,7 +2,7 @@
 import GuruLayout from '@/Layouts/GuruLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import { useCurrentDateTime, getTodayDayNumber, getDayName, getTodayDate } from '@/composables/useDateTime';
+import { useCurrentDateTime, getTodayDayNumber, getDayName, getTodayDate, isTimeWindowActive } from '@/composables/useDateTime';
 
 defineProps({
     schedules: { type: Array, default: () => [] },
@@ -10,7 +10,8 @@ defineProps({
     stats: { type: Object, default: () => ({}) },
     today: { type: String, default: '' },
     teacherName: { type: String, default: '' },
-    message: { type: String, default: '' }
+    message: { type: String, default: '' },
+    bufferMinutes: { type: Number, default: 20 }
 });
 
 const { currentDateTime } = useCurrentDateTime();
@@ -151,7 +152,7 @@ const currentDayNum = ref(getTodayDayNumber());
                                             </div>
                                             <!-- Button next to schedule -->
                                             <Link
-                                                v-if="schedule.day === getDayName(currentDayNum)"
+                                                v-if="schedule.day === getDayName(currentDayNum) && isTimeWindowActive(schedule.time_slot, bufferMinutes)"
                                                 :href="`/guru/absensi/${classData.class_room_id}/${schedule.subject_id}/${getTodayDate()}`"
                                                 class="flex items-center justify-center gap-1 sm:gap-1 md:gap-2 px-2 sm:px-3 md:px-4 py-1.5 md:py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded text-xs sm:text-xs md:text-sm lg:text-sm whitespace-nowrap flex-shrink-0 w-full sm:w-auto transition"
                                             >

@@ -9,6 +9,7 @@ class TeacherAttendance extends Model
 {
     protected $fillable = [
         'teacher_id',
+        'schedule_id',
         'date',
         'status',
         'notes',
@@ -24,5 +25,13 @@ class TeacherAttendance extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    /**
+     * Get the schedule that this attendance belongs to.
+     */
+    public function schedule(): BelongsTo
+    {
+        return $this->belongsTo(Schedule::class);
     }
 }

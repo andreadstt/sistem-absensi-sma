@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TeacherAttendanceResource\Pages;
 use App\Filament\Resources\TeacherAttendanceResource\RelationManagers;
+use App\Models\Schedule;
 use App\Models\TeacherAttendance;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -38,18 +39,53 @@ class TeacherAttendanceResource extends Resource
                     ->relationship('teacher', 'name')
                     ->required()
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->live()
+                    ->afterStateUpdated(fn (Forms\Set $set) => $set('schedule_id', null)),
+                Forms\Components\Select::make('schedule_id')
+                    ->label('Jadwal')
+                    ->required()
+                    ->options(function (Forms\Get $get) {
+                        $teacherId = $get('teacher_id');
+                        if (!$teacherId) {
+                            return [];
+                        }
+
+                        $dayNames = [
+                            1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu',
+                            4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Minggu',
+                        ];
+
+                        return Schedule::where('teacher_id', $teacherId)
+                            ->with(['subject', 'classRoom'])
+                            ->orderBy('weekday')
+                            ->orderBy('time_slot')
+                            ->get()
+                            ->mapWithKeys(function ($schedule) use ($dayNames) {
+                                $day = $dayNames[$schedule->weekday] ?? '-';
+                                $subject = $schedule->subject->name ?? '-';
+                                $class = $schedule->classRoom->name ?? '-';
+                                $label = "{$day} {$schedule->time_slot} — {$subject} ({$class})";
+                                return [$schedule->id => $label];
+                            });
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->native(false)
+                    ->helperText('Pilih guru terlebih dahulu untuk melihat daftar jadwal.'),
                 Forms\Components\DatePicker::make('date')
                     ->label('Tanggal')
                     ->required()
                     ->unique(
                         table: 'teacher_attendances',
                         column: 'date',
-                        modifyRuleUsing: fn (\Illuminate\Validation\Rules\Unique $rule, \Filament\Forms\Get $get) => $rule->where('teacher_id', $get('teacher_id')),
+                        modifyRuleUsing: fn (\Illuminate\Validation\Rules\Unique $rule, \Filament\Forms\Get $get) => $rule
+                            ->where('teacher_id', $get('teacher_id'))
+                            ->where('schedule_id', $get('schedule_id')),
                         ignoreRecord: true,
                     )
                     ->validationMessages([
-                        'unique' => 'Data absensi untuk guru ini pada tanggal tersebut sudah ada.',
+                        'unique' => 'Data absensi untuk guru ini pada jadwal dan tanggal tersebut sudah ada.',
                     ]),
                 Forms\Components\Select::make('status')
                     ->label('Status')
@@ -79,6 +115,17 @@ class TeacherAttendanceResource extends Resource
                     ->label('Tanggal')
                     ->date('d F Y')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('schedule.subject.name')
+                    ->label('Mata Pelajaran')
+                    ->sortable()
+                    ->placeholder('-'),
+                Tables\Columns\TextColumn::make('schedule.classRoom.name')
+                    ->label('Kelas')
+                    ->sortable()
+                    ->placeholder('-'),
+                Tables\Columns\TextColumn::make('schedule.time_slot')
+                    ->label('Jam')
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -161,3 +208,4 @@ class TeacherAttendanceResource extends Resource
         ];
     }
 }
+

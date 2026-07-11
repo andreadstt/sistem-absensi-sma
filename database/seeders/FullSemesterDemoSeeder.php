@@ -235,11 +235,11 @@ class FullSemesterDemoSeeder extends Seeder
         // Create 8 classes per grade (1-8)
         $classes = [];
         
-        // Grade 10 - 8 kelas MIPA (1-8)
+        // Grade 10 - 8 kelas IPA (1-8)
         for ($i = 1; $i <= 8; $i++) {
             $class = ClassRoom::updateOrCreate(
                 [
-                    'name' => "10 MIPA $i",
+                    'name' => "10 IPA $i",
                     'academic_year_id' => $academicYear->id,
                 ],
                 [
@@ -250,13 +250,13 @@ class FullSemesterDemoSeeder extends Seeder
             );
             $classes[] = $class;
         }
-        $this->command->info('   ✓ Kelas 10: 10 MIPA 1-8 (8 kelas)');
+        $this->command->info('   ✓ Kelas 10: 10 IPA 1-8 (8 kelas)');
         
-        // Grade 11 - 8 kelas MIPA (1-8)
+        // Grade 11 - 8 kelas IPA (1-8)
         for ($i = 1; $i <= 8; $i++) {
             $class = ClassRoom::updateOrCreate(
                 [
-                    'name' => "11 MIPA $i",
+                    'name' => "11 IPA $i",
                     'academic_year_id' => $academicYear->id,
                 ],
                 [
@@ -267,13 +267,13 @@ class FullSemesterDemoSeeder extends Seeder
             );
             $classes[] = $class;
         }
-        $this->command->info('   ✓ Kelas 11: 11 MIPA 1-8 (8 kelas)');
+        $this->command->info('   ✓ Kelas 11: 11 IPA 1-8 (8 kelas)');
         
-        // Grade 12 - 8 kelas MIPA (1-8)
+        // Grade 12 - 8 kelas IPA (1-8)
         for ($i = 1; $i <= 8; $i++) {
             $class = ClassRoom::updateOrCreate(
                 [
-                    'name' => "12 MIPA $i",
+                    'name' => "12 IPA $i",
                     'academic_year_id' => $academicYear->id,
                 ],
                 [
@@ -284,7 +284,7 @@ class FullSemesterDemoSeeder extends Seeder
             );
             $classes[] = $class;
         }
-        $this->command->info('   ✓ Kelas 12: 12 MIPA 1-8 (8 kelas)');
+        $this->command->info('   ✓ Kelas 12: 12 IPA 1-8 (8 kelas)');
         
         return $classes;
     }
@@ -327,9 +327,9 @@ class FullSemesterDemoSeeder extends Seeder
     {
         $this->command->info('📝 Creating Teaching Assignments...');
         
-        // Demo teacher mengajar MATEMATIKA SAJA di 4 kelas (11 MIPA 1, 2, 3, 4)
+        // Demo teacher mengajar MATEMATIKA SAJA di 4 kelas (11 IPA 1, 2, 3, 4)
         $matematika = Subject::where('code', 'MAT')->first();
-        $demoClasses = ClassRoom::whereIn('name', ['11 MIPA 1', '11 MIPA 2', '11 MIPA 3', '11 MIPA 4'])->get();
+        $demoClasses = ClassRoom::whereIn('name', ['11 IPA 1', '11 IPA 2', '11 IPA 3', '11 IPA 4'])->get();
         
         $assignmentCount = 0;
         foreach ($demoClasses as $class) {
@@ -341,7 +341,7 @@ class FullSemesterDemoSeeder extends Seeder
             $assignmentCount++;
         }
         
-        $this->command->info("   ✓ Andrea DST: Matematika SAJA di 4 kelas (11 MIPA 1, 2, 3, 4)");
+        $this->command->info("   ✓ Andrea DST: Matematika SAJA di 4 kelas (11 IPA 1, 2, 3, 4)");
         
         // Assign other teachers - each teacher gets max 2 subjects, 2-3 classes per subject
         $subjectsPool = collect($subjects)->shuffle();
@@ -396,24 +396,24 @@ class FullSemesterDemoSeeder extends Seeder
         
         // Demo teacher schedule - Matematika untuk 4 kelas
         $matematika = Subject::where('code', 'MAT')->first();
-        $demoClasses = ClassRoom::whereIn('name', ['11 MIPA 1', '11 MIPA 2', '11 MIPA 3', '11 MIPA 4'])->get();
+        $demoClasses = ClassRoom::whereIn('name', ['11 IPA 1', '11 IPA 2', '11 IPA 3', '11 IPA 4'])->get();
         
         $scheduleData = [
-            // 11 MIPA 1: Senin & Rabu pagi
-            ['class' => '11 MIPA 1', 'weekday' => 1, 'time_slot' => '07:00-08:30'], // Senin
-            ['class' => '11 MIPA 1', 'weekday' => 3, 'time_slot' => '09:00-10:30'], // Rabu
+            // 11 IPA 1: Senin & Rabu pagi
+            ['class' => '11 IPA 1', 'weekday' => 1, 'time_slot' => '07:00-08:30'], // Senin
+            ['class' => '11 IPA 1', 'weekday' => 3, 'time_slot' => '09:00-10:30'], // Rabu
             
-            // 11 MIPA 2: Selasa & Kamis pagi
-            ['class' => '11 MIPA 2', 'weekday' => 2, 'time_slot' => '08:30-10:00'], // Selasa
-            ['class' => '11 MIPA 2', 'weekday' => 4, 'time_slot' => '10:30-12:00'], // Kamis
+            // 11 IPA 2: Selasa & Kamis pagi
+            ['class' => '11 IPA 2', 'weekday' => 2, 'time_slot' => '08:30-10:00'], // Selasa
+            ['class' => '11 IPA 2', 'weekday' => 4, 'time_slot' => '10:30-12:00'], // Kamis
             
-            // 11 MIPA 3: Senin & Rabu siang
-            ['class' => '11 MIPA 3', 'weekday' => 1, 'time_slot' => '13:00-14:30'], // Senin
-            ['class' => '11 MIPA 3', 'weekday' => 3, 'time_slot' => '13:00-14:30'], // Rabu
+            // 11 IPA 3: Senin & Rabu siang
+            ['class' => '11 IPA 3', 'weekday' => 1, 'time_slot' => '13:00-14:30'], // Senin
+            ['class' => '11 IPA 3', 'weekday' => 3, 'time_slot' => '13:00-14:30'], // Rabu
             
-            // 11 MIPA 4: Selasa & Kamis siang
-            ['class' => '11 MIPA 4', 'weekday' => 2, 'time_slot' => '13:00-14:30'], // Selasa
-            ['class' => '11 MIPA 4', 'weekday' => 4, 'time_slot' => '13:00-14:30'], // Kamis
+            // 11 IPA 4: Selasa & Kamis siang
+            ['class' => '11 IPA 4', 'weekday' => 2, 'time_slot' => '13:00-14:30'], // Selasa
+            ['class' => '11 IPA 4', 'weekday' => 4, 'time_slot' => '13:00-14:30'], // Kamis
         ];
         
         $scheduleCount = 0;

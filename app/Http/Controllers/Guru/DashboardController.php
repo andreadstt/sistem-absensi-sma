@@ -111,6 +111,7 @@ class DashboardController extends Controller
             ],
             'today' => now()->format('l, F j, Y'),
             'teacherName' => $teacher->name,
+            'bufferMinutes' => config('academic.teacher_attendance_buffer_minutes', 20),
         ]);
     }
 

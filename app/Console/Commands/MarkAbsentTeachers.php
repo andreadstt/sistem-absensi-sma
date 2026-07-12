@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Schedule;
 use App\Models\TeacherAttendance;
+use App\Models\AcademicEvent;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -33,6 +34,17 @@ class MarkAbsentTeachers extends Command
         $bufferMinutes = config('academic.teacher_attendance_buffer_minutes', 20);
         $now = now();
         $marked = 0;
+
+        // Check if today is a holiday
+        $isHoliday = AcademicEvent::where('type', 'holiday')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->exists();
+
+        if ($isHoliday) {
+            $this->info("Hari ini libur. Cronjob di-skip.");
+            return self::SUCCESS;
+        }
 
         // Get all schedules for today's weekday
         $schedules = Schedule::where('weekday', $todayWeekday)->get();

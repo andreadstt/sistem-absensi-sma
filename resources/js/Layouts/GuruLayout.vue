@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import Sidebar from '@/Components/Guru/Sidebar.vue';
+import FlashSuccessPopup from '@/Components/FlashSuccessPopup.vue';
 
 defineProps({
     title: {
@@ -11,6 +12,17 @@ defineProps({
 });
 
 const sidebarOpen = ref(false);
+
+const page = usePage();
+const flashSuccess = computed(() => page.props.flash?.success);
+const flashError = computed(() => page.props.flash?.error);
+
+// Local refs to control popup visibility (props are readonly in Inertia)
+const showSuccessPopup = ref(false);
+const showErrorPopup = ref(false);
+
+watch(flashSuccess, (val) => { if (val) showSuccessPopup.value = true; }, { immediate: true });
+watch(flashError, (val) => { if (val) showErrorPopup.value = true; }, { immediate: true });
 
 const toggleSidebar = () => {
     sidebarOpen.value = !sidebarOpen.value;
@@ -82,6 +94,24 @@ const closeSidebar = () => {
                 </div>
             </footer>
         </div>
+
+        <!-- Global Flash Messages -->
+        <FlashSuccessPopup
+            :show="showErrorPopup"
+            :message="flashError ?? ''"
+            type="error"
+            action-href="#"
+            action-label="Tutup"
+            @close="showErrorPopup = false"
+        />
+        <FlashSuccessPopup
+            :show="showSuccessPopup"
+            :message="flashSuccess ?? ''"
+            type="success"
+            action-href="#"
+            action-label="OK"
+            @close="showSuccessPopup = false"
+        />
     </div>
 </template>
 

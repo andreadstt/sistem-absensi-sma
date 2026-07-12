@@ -8,6 +8,7 @@ use App\Models\ClassRoom;
 use App\Models\Schedule;
 use App\Models\Subject;
 use App\Models\Student;
+use App\Models\AcademicEvent;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -39,6 +40,17 @@ class AbsensiController extends Controller
         if ($schedules->isEmpty()) {
             return redirect()->route('guru.dashboard')
                 ->with('error', 'Jadwal tidak ditemukan untuk kombinasi kelas, mata pelajaran, dan hari ini.');
+        }
+
+        // Check for holidays
+        $holiday = AcademicEvent::where('type', 'holiday')
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->first();
+
+        if ($holiday) {
+            return redirect()->route('guru.dashboard')
+                ->with('error', "Hari ini adalah {$holiday->title} — absensi tidak dibuka.");
         }
 
         // Disambiguate for double periods
@@ -117,6 +129,16 @@ class AbsensiController extends Controller
 
         if ($schedules->isEmpty()) {
             return back()->with('error', 'Jadwal tidak ditemukan.');
+        }
+
+        // Check for holidays
+        $holiday = AcademicEvent::where('type', 'holiday')
+            ->where('start_date', '<=', $validated['date'])
+            ->where('end_date', '>=', $validated['date'])
+            ->first();
+
+        if ($holiday) {
+            return back()->with('error', "Hari ini adalah {$holiday->title} — absensi tidak dibuka.");
         }
 
         // Disambiguate for double periods

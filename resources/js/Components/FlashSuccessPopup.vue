@@ -20,6 +20,10 @@ const props = defineProps({
         type: String,
         default: 'OK',
     },
+    type: {
+        type: String,
+        default: 'success', // 'success' or 'error'
+    },
 });
 
 const visible = ref(props.show);
@@ -39,25 +43,21 @@ const close = () => {
 <template>
     <Modal :show="visible" maxWidth="lg" :closeable="false" @close="close">
         <div class="px-8 py-10 sm:px-10">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
-                <svg
-                    class="h-8 w-8"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+            <div :class="[
+                'mx-auto flex h-16 w-16 items-center justify-center rounded-full',
+                type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+            ]">
+                <svg v-if="type === 'success'" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <svg v-else class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </div>
 
             <div class="mt-6 text-center">
                 <h3 class="text-2xl font-bold text-gray-900">
-                    Berhasil
+                    {{ type === 'success' ? 'Berhasil' : 'Error' }}
                 </h3>
 
                 <p class="mt-4 text-base leading-7 text-gray-600">

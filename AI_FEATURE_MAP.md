@@ -255,3 +255,34 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
     - *"Ubah waktu toleransi/buffer pengisian absensi"*: Ubah nilai `teacher_attendance_buffer_minutes` di `config/academic.php`. Nilai ini akan di-*pass* otomatis ke Frontend via `DashboardController`.
     - *"Matikan fitur otomatis alpa untuk guru"*: Hapus atau comment baris `->command('teachers:mark-absent')` di `bootstrap/app.php`.
     - *"Ubah logika tombol abu-abu/hijau di dashboard"*: Buka fungsi `isTimeWindowActive` di `resources/js/composables/useDateTime.js` dan edit view `Dashboard.vue`.
+
+---
+
+## 12. Kalender Akademik (Academic Calendar)
+
+- **Tujuan:** Admin mengelola jadwal kegiatan akademik (hari libur, ujian, rapat, dll). Sistem akan otomatis memblokir form absensi guru jika hari tersebut diset sebagai "Libur" (holiday).
+- **Arsitektur & Penghapusan Resource Lama:**
+    - Halaman `AcademicEventResource.php` beserta sub-page CRUD bawaan Filament **dihapus sepenuhnya** untuk mencegah duplikasi menu/UI.
+    - Digantikan sepenuhnya oleh sebuah Custom Page `AcademicCalendar` untuk performa rendering grid yang fleksibel.
+- **Lokasi File Kunci:**
+    - **Model:** `app/Models/AcademicEvent.php` (menampung field `title`, `type`, `start_date`, `end_date`, `description`).
+    - **Migrasi:** `database/migrations/2026_07_01_200725_create_academic_events_table.php`.
+    - **Filament Page (Kalender):** `app/Filament/Pages/AcademicCalendar.php` (logika traversal bulan, create/edit actions) dan `resources/views/filament/pages/academic-calendar.blade.php` (grid bulan, CSS styling, modifikator modal).
+    - **Integrasi Absensi (Guru):** `app/Http/Controllers/Guru/AbsensiController.php` (memblokir akses form absensi saat hari libur di method `show` dan `store`).
+    - **Integrasi Cronjob:** `app/Console/Commands/MarkAbsentTeachers.php` (melewati penandaan TIDAK_HADIR jika hari libur).
+    - **Komponen Notifikasi (Portal Guru):** `resources/js/Components/FlashSuccessPopup.vue` (diperbarui agar mendukung `type="error"`) dan `resources/js/Layouts/GuruLayout.vue` (mengintegrasikan popup ini secara global di semua halaman portal Guru).
+- **Business Rules:**
+    - Kalender dirender menggunakan pola grid 7 kolom (Senin-Minggu) visual yang konsisten dengan kalender kehadiran guru.
+    - Event bisa berdurasi 1 hari atau rentang beberapa hari (`start_date` sampai `end_date`). Toggle "Rentang beberapa hari?" (`is_range`) mengontrol penampakan `end_date` secara interaktif. Jika dinonaktifkan, `end_date` otomatis disamakan dengan `start_date`.
+    - Warna grid disesuaikan per jenis event: merah (holiday), oranye (exam), biru (meeting), hijau (activity), abu-abu (other).
+    - Event di kalender dapat diklik untuk memunculkan detail modal yang berisi opsi "Edit Event" (memanggil Action Filament `$wire.mountAction('editEvent')`) dan "Hapus Event" (konfirmasi delete).
+    - Jika Guru mencoba mengakses atau menyimpan absensi siswa pada tanggal yang ditandai `holiday`, request dialihkan ke Dashboard dengan pesan flash `error` dan ditangkap langsung oleh global modal popup.
+- **Catatan Teknis Penting (Date Casting di PHP):**
+    - Cast Eloquent format seperti `date:Y-m-d` di model `AcademicEvent.php` **hanya memengaruhi hasil serialisasi** (seperti `toArray()`, `toJson()`, atau Inertia props).
+    - Saat properti model diakses langsung di PHP (seperti `$event->start_date`), nilainya **tetap merupakan instance Carbon**, bukan string.
+    - Oleh karena itu, perbandingan tanggal di PHP harus diekspresikan secara eksplisit menggunakan `.format('Y-m-d')` (misal: `$dateStr >= $event->start_date->format('Y-m-d')`) atau membandingkan Carbon-ke-Carbon secara langsung, tidak boleh membandingkan string mentah ke property Carbon.
+- **Task Mapping / Jika user berkata...**
+    - *"Ubah warna tanggal kegiatan di kalender"*: Buka `resources/views/filament/pages/academic-calendar.blade.php`, sesuaikan class CSS `.event-activity` (dan legend `.event-bg-activity`).
+    - *"Ubah skema input form tambah/edit event"*: Edit form builder di `getHeaderActions()` (untuk create) atau `editEventAction()` (untuk edit) di `app/Filament/Pages/AcademicCalendar.php`.
+    - *"Ubah logika filter event bulan ini"*: Edit properti `getCalendarDaysProperty()` di `app/Filament/Pages/AcademicCalendar.php`.
+    - *"Ubah tampilan popup error secara global"*: Buka `resources/js/Components/FlashSuccessPopup.vue` (logika styling popup) dan `resources/js/Layouts/GuruLayout.vue` (registrasi global popup).

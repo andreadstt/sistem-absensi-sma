@@ -29,6 +29,14 @@ Jangan membaca banyak file sekaligus. Gunakan tool pencarian untuk menemukan fil
 ### 1.5. Rebuild Custom Filament Theme
 **ATURAN PENTING:** Setelah mengubah class Tailwind di file Blade/Livewire manapun yang dipakai di dalam panel admin Filament, **WAJIB** jalankan `npm run build` sebelum menganggap perubahan styling selesai — custom Filament theme (`resources/css/filament/admin/theme.css`) tidak otomatis ter-recompile hanya dari `npm run dev` untuk perubahan di file Blade.
 
+### 1.6. Perbandingan Tanggal Eloquent di PHP
+**ATURAN PENTING:** Parameter format cast pada model Eloquent (seperti `'start_date' => 'date:Y-m-d'`) **HANYA** memengaruhi hasil serialisasi data saat dikonversi ke array/JSON (termasuk props yang dikirim Inertia ke Vue). Saat properti tersebut diakses langsung di PHP (misal `$event->start_date`), tipe datanya **tetap berupa instance Carbon**, bukan string.
+Oleh karena itu, perbandingan tanggal di PHP:
+*   ❌ **SALAH:** `$dateStr >= $event->start_date` (membandingkan string dengan instance Carbon, menghasilkan evaluasi yang tidak valid).
+*   ✅ **BENAR (Format Eksplisit):** `$dateStr >= $event->start_date->format('Y-m-d')`.
+*   ✅ **BENAR (Carbon ke Carbon):** `Carbon::parse($dateStr)->greaterThanOrEqualTo($event->start_date)`.
+Selalu gunakan salah satu dari cara yang benar di atas saat membandingkan tanggal di backend Laravel.
+
 ---
 
 ## 2. Gambaran Umum Proyek

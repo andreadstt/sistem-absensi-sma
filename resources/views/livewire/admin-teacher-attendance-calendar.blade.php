@@ -343,12 +343,18 @@
                             }
                         }"
                     >
-                        {{-- Header Row: Title & Search --}}
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4" x-show="selectedClass === null">
-                            <div class="font-bold text-gray-700 dark:text-gray-300 text-lg">KELAS :</div>
-                            
+                        {{-- Header Row: Summary & Search --}}
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                            {{-- Summary bar --}}
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-gray-500 dark:text-gray-400">
+                                    <strong class="text-gray-800 dark:text-gray-200">{{ count($selectedDateDetails) }}</strong> kelas
+                                </span>
+                                <span>KELAS : </span>
+                            </div>
+
                             {{-- Search input (right aligned) --}}
-                            <div class="relative max-w-xs w-full sm:w-auto">
+                            <div x-show="selectedClass === null" class="relative max-w-xs w-full sm:w-auto">
                                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                                     <x-filament::icon icon="heroicon-m-magnifying-glass" class="h-4 w-4 text-gray-400" />
                                 </div>
@@ -381,7 +387,24 @@
                                                 {{ $classData['class_name'] }}
                                             </span>
 
-
+                                            {{-- Badges --}}
+                                            <div class="flex flex-wrap justify-center gap-1.5 w-full">
+                                                @if ($classData['total_hadir'] > 0)
+                                                    <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-1.5 py-0.5 text-xs font-semibold">
+                                                        ✓ {{ $classData['total_hadir'] }}
+                                                    </span>
+                                                @endif
+                                                @if ($classData['total_not_hadir'] > 0)
+                                                    <span class="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300 px-1.5 py-0.5 text-xs font-semibold">
+                                                        ✗ {{ $classData['total_not_hadir'] }}
+                                                    </span>
+                                                @endif
+                                                @if ($classData['total_hadir'] === 0 && $classData['total_not_hadir'] === 0)
+                                                    <span class="inline-flex items-center rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 text-xs">
+                                                        –
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </button>
                                     @endforeach
 

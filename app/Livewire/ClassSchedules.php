@@ -69,14 +69,11 @@ class ClassSchedules extends Widget implements HasForms, HasActions
             ->form(ScheduleResource::getFormSchema());
     }
 
-    public function deleteAction(): Action
+    public function deleteAction(): \Filament\Actions\DeleteAction
     {
-        return Action::make('delete')
+        return \Filament\Actions\DeleteAction::make('delete')
             ->label('Hapus')
-            ->requiresConfirmation()
-            ->action(function (Schedule $record) {
-                $record->delete();
-            });
+            ->record(fn (array $arguments) => Schedule::find($arguments['record']));
     }
 
     public function openCreateModal(int $weekday): void

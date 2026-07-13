@@ -152,8 +152,9 @@ const currentDayNum = ref(getTodayDayNumber());
                                             </div>
                                             <!-- Button next to schedule -->
                                             <Link
-                                                v-if="schedule.day === getDayName(currentDayNum) && isTimeWindowActive(schedule.time_slot, bufferMinutes)"
+                                                v-if="schedule.day === getDayName(currentDayNum) && schedule.status && schedule.status.status === 'OPEN'"
                                                 :href="`/guru/absensi/${classData.class_room_id}/${schedule.subject_id}/${getTodayDate()}`"
+                                                :title="schedule.status.message"
                                                 class="flex items-center justify-center gap-1 sm:gap-1 md:gap-2 px-2 sm:px-3 md:px-4 py-1.5 md:py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded text-xs sm:text-xs md:text-sm lg:text-sm whitespace-nowrap flex-shrink-0 w-full sm:w-auto transition"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-4 sm:w-4 md:h-5 md:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -164,12 +165,22 @@ const currentDayNum = ref(getTodayDayNumber());
                                             <button
                                                 v-else
                                                 disabled
+                                                :title="schedule.day === getDayName(currentDayNum) && schedule.status ? schedule.status.message : 'Bukan jadwal hari ini'"
                                                 class="flex items-center justify-center gap-1 sm:gap-1 md:gap-2 px-2 sm:px-3 md:px-4 py-1.5 md:py-2 bg-gray-300 text-gray-600 font-bold rounded text-xs sm:text-xs md:text-sm lg:text-sm whitespace-nowrap flex-shrink-0 w-full sm:w-auto cursor-not-allowed"
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-4 sm:w-4 md:h-5 md:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                    <path v-if="schedule.day === getDayName(currentDayNum) && schedule.status && schedule.status.status === 'ALREADY_SUBMITTED'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                                 </svg>
-                                                <span>Masuk</span>
+                                                <span>{{ 
+                                                    schedule.day !== getDayName(currentDayNum) ? 'Belum Mulai' : 
+                                                    (schedule.status ? 
+                                                        (schedule.status.status === 'HOLIDAY' ? 'Libur' : 
+                                                         schedule.status.status === 'ALREADY_SUBMITTED' ? 'Sudah Diisi' :
+                                                         schedule.status.status === 'NOT_STARTED' ? 'Belum Mulai' :
+                                                         schedule.status.status === 'CLOSED' ? 'Selesai' : 'Terkunci') 
+                                                    : 'Terkunci') 
+                                                }}</span>
                                             </button>
                                         </div>
                                     </div>

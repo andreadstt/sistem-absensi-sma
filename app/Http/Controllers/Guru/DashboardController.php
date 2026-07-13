@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Models\Schedule;
+use App\Services\TeacherAttendanceService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -68,11 +69,16 @@ class DashboardController extends Controller
                             7 => 'Minggu',
                             default => '-',
                         };
+                        
+                        $todayDate = now()->format('Y-m-d');
+                        $statusObj = TeacherAttendanceService::getScheduleStatus($schedule, $todayDate);
+
                         return [
                             'day' => $dayName,
                             'time_slot' => $schedule->time_slot,
                             'subject_name' => $schedule->subject->name ?? '-',
                             'subject_id' => $schedule->subject_id,
+                            'status' => $statusObj,
                         ];
                     });
                 

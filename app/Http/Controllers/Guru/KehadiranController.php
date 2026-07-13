@@ -43,7 +43,7 @@ class KehadiranController extends Controller
 
             $totalJadwal = $records->count();
             $totalHadir = $records->where('status', 'HADIR')->count();
-            $totalTidakHadir = $records->where('status', 'TIDAK_HADIR')->count();
+            $totalTidakHadir = $records->where('status', '!=', 'HADIR')->count();
 
             // Determine aggregate status for calendar coloring
             if ($totalHadir === $totalJadwal) {
@@ -67,7 +67,7 @@ class KehadiranController extends Controller
         // Calculate overall statistics
         $totalRecords = $attendances->count();
         $totalHadir = $attendances->where('status', 'HADIR')->count();
-        $totalTidakHadir = $attendances->where('status', 'TIDAK_HADIR')->count();
+        $totalTidakHadir = $attendances->where('status', '!=', 'HADIR')->count();
         $percentageHadir = $totalRecords > 0 ? round(($totalHadir / $totalRecords) * 100, 1) : 0;
 
         return Inertia::render('Guru/Kehadiran', [

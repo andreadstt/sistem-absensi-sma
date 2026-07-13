@@ -236,7 +236,7 @@ const formatDate = (date) => {
                                 </td>
                                 <td class="px-3 py-3 text-center">
                                     <span :class="[
-                                        'badge font-semibold text-white',
+                                        'badge font-semibold text-white whitespace-nowrap',
                                         record.status === 'HADIR' ? 'badge-success' : 'badge-error'
                                     ]">
                                         {{ record.status === 'HADIR' ? 'Hadir' : 'Tidak Hadir' }}

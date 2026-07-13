@@ -66,13 +66,13 @@ const close = () => {
             </div>
 
             <div class="mt-8 flex justify-center">
-                <Link
-                    :href="actionHref"
+                <button
+                    type="button"
                     class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-7 py-3 text-base font-semibold text-white transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                     @click="close"
                 >
                     {{ actionLabel }}
-                </Link>
+                </button>
             </div>
         </div>
     </Modal>

@@ -135,16 +135,7 @@ class TeacherRegistrationResource extends Resource
                         'rejected' => 'Ditolak',
                         default => $state,
                     }),
-                Tables\Columns\TextColumn::make('reviewer.name')
-                    ->label('Direview Oleh')
-                    ->placeholder('-')
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('reviewed_at')
-                    ->label('Tanggal Review')
-                    ->dateTime('d M Y H:i')
-                    ->sortable()
-                    ->toggleable()
-                    ->placeholder('-'),
+
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')

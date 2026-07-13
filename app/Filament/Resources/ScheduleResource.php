@@ -98,8 +98,8 @@ class ScheduleResource extends Resource
                             'regex' => 'Format jam harus HH:MM-HH:MM (contoh: 07:00-08:00)',
                         ])
                         ->rules([
-                            fn(Get $get, $component): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $component) {
-                                $recordId = $component->getRecord()->id ?? null;
+                            fn(Get $get, ?\Illuminate\Database\Eloquent\Model $record): \Closure => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                $recordId = $record?->id ?? null;
                                 $weekday = $get('weekday');
                                 $teacherId = $get('teacher_id');
                                 $classRoomId = $get('class_room_id');

@@ -21,8 +21,18 @@ const flashError = computed(() => page.props.flash?.error);
 const showSuccessPopup = ref(false);
 const showErrorPopup = ref(false);
 
-watch(flashSuccess, (val) => { if (val) showSuccessPopup.value = true; }, { immediate: true });
-watch(flashError, (val) => { if (val) showErrorPopup.value = true; }, { immediate: true });
+watch(
+    () => page.props.flash,
+    (flash) => {
+        if (flash?.success) {
+            showSuccessPopup.value = true;
+        }
+        if (flash?.error) {
+            showErrorPopup.value = true;
+        }
+    },
+    { immediate: true, deep: true }
+);
 
 const toggleSidebar = () => {
     sidebarOpen.value = !sidebarOpen.value;

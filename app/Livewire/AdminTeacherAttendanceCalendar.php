@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Schedule;
 use App\Models\Teacher;
 use App\Models\TeacherAttendance;
+use App\Services\TeacherAttendanceService;
 use Carbon\Carbon;
 use Livewire\Component;
 
@@ -147,23 +148,7 @@ class AdminTeacherAttendanceCalendar extends Component
 
     public function getTodayStatsProperty()
     {
-        $today = now()->format('Y-m-d');
-        $todayWeekday = now()->dayOfWeekIso;
-
-        // Total schedules for today (all teachers' schedules on this weekday)
-        $totalSchedulesToday = Schedule::where('weekday', $todayWeekday)->count();
-        
-        $todayRecords = TeacherAttendance::whereDate('date', $today)->get();
-        $totalHadir = $todayRecords->where('status', 'HADIR')->count();
-        $totalTidakHadir = $todayRecords->where('status', 'TIDAK_HADIR')->count();
-
-        return [
-            'total_jadwal' => $totalSchedulesToday,
-            'total_hadir' => $totalHadir,
-            'total_tidak_hadir' => $totalTidakHadir,
-            'total_tercatat' => $todayRecords->count(),
-            'percentage' => $totalSchedulesToday > 0 ? round(($totalHadir / $totalSchedulesToday) * 100, 1) : 0,
-        ];
+        return TeacherAttendanceService::getTodayStats();
     }
 
     public function getMonthlyStatsProperty()

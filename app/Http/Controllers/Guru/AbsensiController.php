@@ -8,7 +8,7 @@ use App\Models\ClassRoom;
 use App\Models\Schedule;
 use App\Models\Subject;
 use App\Models\Student;
-use App\Models\AcademicEvent;
+use App\Services\TeacherAttendanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,27 +42,16 @@ class AbsensiController extends Controller
                 ->with('error', 'Jadwal tidak ditemukan untuk kombinasi kelas, mata pelajaran, dan hari ini.');
         }
 
-        // Check for holidays
-        $holiday = AcademicEvent::where('type', 'holiday')
-            ->where('start_date', '<=', $date)
-            ->where('end_date', '>=', $date)
-            ->first();
-
-        if ($holiday) {
-            return redirect()->route('guru.dashboard')
-                ->with('error', "Hari ini adalah {$holiday->title} — absensi tidak dibuka.");
-        }
-
         // Disambiguate for double periods
         $schedule = $schedules->count() === 1 
             ? $schedules->first() 
             : $this->findBestMatchingSchedule($schedules, $date);
 
-        // Check time restriction
-        $timeCheck = $this->checkTimeWindow($schedule, $date);
-        if ($timeCheck !== true) {
+        // Check schedule status (holiday, time window)
+        $statusObj = TeacherAttendanceService::getScheduleStatus($schedule, $date);
+        if ($statusObj['status'] !== 'OPEN') {
             return redirect()->route('guru.dashboard')
-                ->with('error', $timeCheck);
+                ->with('error', $statusObj['message']);
         }
 
         // Check if attendance already exists for this date
@@ -131,25 +120,15 @@ class AbsensiController extends Controller
             return back()->with('error', 'Jadwal tidak ditemukan.');
         }
 
-        // Check for holidays
-        $holiday = AcademicEvent::where('type', 'holiday')
-            ->where('start_date', '<=', $validated['date'])
-            ->where('end_date', '>=', $validated['date'])
-            ->first();
-
-        if ($holiday) {
-            return back()->with('error', "Hari ini adalah {$holiday->title} — absensi tidak dibuka.");
-        }
-
         // Disambiguate for double periods
         $schedule = $schedules->count() === 1 
             ? $schedules->first() 
             : $this->findBestMatchingSchedule($schedules, $validated['date']);
 
-        // Check time restriction
-        $timeCheck = $this->checkTimeWindow($schedule, $validated['date']);
-        if ($timeCheck !== true) {
-            return back()->with('error', $timeCheck);
+        // Check schedule status
+        $statusObj = TeacherAttendanceService::getScheduleStatus($schedule, $validated['date']);
+        if ($statusObj['status'] !== 'OPEN') {
+            return back()->with('error', $statusObj['message']);
         }
 
         // Check if attendance already exists
@@ -179,41 +158,7 @@ class AbsensiController extends Controller
             ->with('success', 'Attendance successfully recorded!');
     }
 
-    /**
-     * Check if the current time falls within the allowed time window for attendance input.
-     *
-     * @param Schedule $schedule
-     * @param string $date
-     * @return true|string True if within window, error message string otherwise.
-     */
-    private function checkTimeWindow(Schedule $schedule, string $date): true|string
-    {
-        $bufferMinutes = config('academic.teacher_attendance_buffer_minutes', 20);
 
-        // Parse time_slot (format: "07:00-08:00")
-        $timeParts = explode('-', $schedule->time_slot);
-        if (count($timeParts) !== 2) {
-            // If time_slot format is unexpected, allow access
-            return true;
-        }
-
-        $startTime = trim($timeParts[0]);
-        $endTime = trim($timeParts[1]);
-
-        $windowStart = Carbon::parse("{$date} {$startTime}");
-        $windowEnd = Carbon::parse("{$date} {$endTime}")->addMinutes($bufferMinutes);
-        $now = now();
-
-        if ($now->lt($windowStart)) {
-            return 'Jadwal belum dimulai.';
-        }
-
-        if ($now->gt($windowEnd)) {
-            return 'Waktu input absensi untuk jadwal ini sudah berakhir. Hubungi admin jika perlu koreksi.';
-        }
-
-        return true;
-    }
 
     /**
      * From multiple schedules with the same teacher+class+subject+weekday,

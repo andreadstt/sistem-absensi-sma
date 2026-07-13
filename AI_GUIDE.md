@@ -70,3 +70,32 @@ Proyek ini dibangun dengan arsitektur "dual-portal" menggunakan tumpukan teknolo
 - `routes/web.php`: Mendefinisikan rute untuk Portal Guru dan halaman web lainnya. Rute Portal Admin diatur oleh Filament secara otomatis.
 - `database/seeders/`: Berisi seeder untuk data awal, termasuk role dan permission.
 - `database/migrations/`: Skema database.
+
+---
+
+## 3. Konteks Deployment (Untuk Bantuan AI Eksternal)
+
+Jika Anda (AI eksternal seperti ChatGPT, Claude, dll) diminta untuk membantu mendeploy aplikasi ini ke VPS atau Cloud (misal Azure/AWS), perhatikan konteks server requirements berikut:
+
+### 3.1. Tech Stack Requirements
+*   **OS:** Linux (Ubuntu 22.04 / 24.04 sangat disarankan)
+*   **Web Server:** Nginx (disarankan) atau Apache
+*   **PHP:** PHP 8.2+ (Wajib mengaktifkan ekstensi: `pdo_mysql`, `mbstring`, `xml`, `curl`, `zip`, `gd`, `intl`, `bcmath`)
+*   **Database:** MySQL 8.0+ atau MariaDB
+*   **Node.js & NPM:** Wajib ada untuk mem-build *frontend assets* Vue & Tailwind (Vite). Minimal Node.js 18+.
+
+### 3.2. Proses Deployment Wajib
+Setelah kode di-*clone* ke server produksi, perintah berikut wajib dijalankan:
+1. `composer install --optimize-autoloader --no-dev`
+2. `npm install` lalu `npm run build` (Sangat penting karena ini aplikasi SPA/Inertia Vue dan Custom Filament Theme).
+3. `php artisan storage:link` (Agar gambar/foto bisa diakses publik).
+4. `php artisan migrate --force` (Jalankan seeder `FullSemesterDemoSeeder` HANYA jika ini deploy untuk demo/sidang awal).
+5. `php artisan optimize` (Untuk cache config, route, view).
+
+### 3.3. Background Jobs / Queue
+Proyek ini menggunakan **Laravel Queues** (dengan database driver) untuk memproses pekerjaan asinkron (misalnya mengirim email notifikasi persetujuan pendaftaran guru).
+*   **Wajib:** Setup `Supervisor` di Linux untuk memastikan perintah `php artisan queue:work` berjalan terus di *background*.
+*   **Alternatif Demo:** Jika server tidak mendukung Supervisor (misal shared hosting) atau hanya untuk keperluan presentasi singkat, ubah `QUEUE_CONNECTION=sync` di `.env` agar email langsung terkirim.
+
+### 3.4. Keamanan & Perizinan File
+Pastikan direktori `storage/` dan `bootstrap/cache/` memiliki izin baca-tulis (`chmod -R 775` dan chown ke `www-data` atau *user web server* yang sesuai).

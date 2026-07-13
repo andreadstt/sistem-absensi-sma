@@ -346,10 +346,7 @@
                         {{-- Header Row: Summary & Search --}}
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                             {{-- Summary bar --}}
-                            <div class="flex items-center gap-3 text-sm">
-                                <span class="text-gray-500 dark:text-gray-400">
-                                    <strong class="text-gray-800 dark:text-gray-200">{{ count($selectedDateDetails) }}</strong> kelas
-                                </span>
+                            <div class="flex items-center gap-3 text-sm font-semibold">
                                 <span>KELAS : </span>
                             </div>
 
@@ -390,12 +387,12 @@
                                             {{-- Badges --}}
                                             <div class="flex flex-wrap justify-center gap-1.5 w-full">
                                                 @if ($classData['total_hadir'] > 0)
-                                                    <span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-1.5 py-0.5 text-xs font-semibold">
+                                                    <span class="inline-flex items-center rounded-full bg-green-600 text-white dark:bg-green-500 px-1.5 py-0.5 text-xs font-bold">
                                                         ✓ {{ $classData['total_hadir'] }}
                                                     </span>
                                                 @endif
                                                 @if ($classData['total_not_hadir'] > 0)
-                                                    <span class="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300 px-1.5 py-0.5 text-xs font-semibold">
+                                                    <span class="inline-flex items-center rounded-full bg-red-600 text-white dark:bg-red-500 px-1.5 py-0.5 text-xs font-bold">
                                                         ✗ {{ $classData['total_not_hadir'] }}
                                                     </span>
                                                 @endif
@@ -462,9 +459,9 @@
                                                 <td class="px-4 py-3 text-center overflow-hidden">
                                                     <span
                                                         :class="rec.status === 'HADIR'
-                                                            ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                                                            : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300'"
-                                                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
+                                                            ? 'bg-green-600 text-white dark:bg-green-500'
+                                                            : 'bg-red-600 text-white dark:bg-red-500'"
+                                                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold whitespace-nowrap"
                                                         x-text="rec.status === 'HADIR' ? 'Hadir' : 'Tidak Hadir'"
                                                     ></span>
                                                     <div x-show="rec.notes" class="mt-1 text-xs text-gray-400 italic truncate" :title="rec.notes" x-text="rec.notes"></div>

@@ -37,7 +37,7 @@ class LatestTeacherRegistrations extends BaseWidget
             ->emptyStateIcon('heroicon-o-check-circle')
             ->paginated(false)
             ->recordUrl(
-                fn (TeacherRegistration $record): string => TeacherRegistrationResource::getUrl('view', ['record' => $record])
+                fn (TeacherRegistration $record): string => TeacherRegistrationResource::getUrl('index')
             );
     }
 }

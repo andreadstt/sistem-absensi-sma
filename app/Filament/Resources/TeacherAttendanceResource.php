@@ -131,7 +131,7 @@ class TeacherAttendanceResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'HADIR' => 'success',
-                        'TIDAK_HADIR' => 'warning',
+                        'TIDAK_HADIR' => 'danger',
                         default => 'secondary',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {

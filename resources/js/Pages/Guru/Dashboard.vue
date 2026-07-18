@@ -127,7 +127,7 @@ const currentDayNum = ref(getTodayDayNumber());
                     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                         <div
                             v-for="classData in myClasses"
-                            :key="classData.class_room_id"
+                            :key="classData.class_room_id + '-' + classData.subject_id"
                             class="class-card p-3 sm:p-4 md:p-6"
                         >
                             <h3 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-3 md:mb-4">{{ classData.class_name }}</h3>
@@ -135,8 +135,8 @@ const currentDayNum = ref(getTodayDayNumber());
                             <div class="mb-4 sm:mb-4 md:mb-5">
                                 <p class="text-xs sm:text-sm md:text-base lg:text-base text-gray-700 font-bold mb-2 sm:mb-2 md:mb-3">Mata Pelajaran:</p>
                                 <div class="flex flex-wrap gap-2">
-                                    <span v-for="subject in classData.subjects" :key="subject.id" class="subject-tag">
-                                        {{ subject.name }}
+                                    <span class="subject-tag">
+                                        {{ classData.subject_name }}
                                     </span>
                                 </div>
                             </div>
@@ -185,6 +185,10 @@ const currentDayNum = ref(getTodayDayNumber());
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div v-else class="mb-3 sm:mb-4 md:mb-5 pt-3 sm:pt-4 md:pt-5 border-t border-gray-200">
+                                <p class="text-xs sm:text-sm md:text-base lg:text-base text-gray-700 font-bold mb-2 sm:mb-3 md:mb-4">Jadwal:</p>
+                                <p class="text-gray-500 text-sm sm:text-base italic">Belum ada jadwal yang diatur</p>
                             </div>
                         </div>
                     </div>

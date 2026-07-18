@@ -11,7 +11,7 @@ use Inertia\Inertia;
 
 class KelasController extends Controller
 {
-    public function show(Request $request, $classRoomId)
+    public function show(Request $request, $classRoomId, $subjectId)
     {
         $user = $request->user();
         $teacher = $user->teacher;
@@ -20,9 +20,10 @@ class KelasController extends Controller
             abort(403, 'Teacher profile not found');
         }
 
-        // Verify teacher mengajar kelas ini
+        // Verify teacher mengajar kelas ini dan mata pelajaran ini
         $teachingAssignment = \App\Models\TeachingAssignment::where('teacher_id', $teacher->id)
             ->where('class_room_id', $classRoomId)
+            ->where('subject_id', $subjectId)
             ->first();
 
         if (!$teachingAssignment) {
@@ -40,6 +41,7 @@ class KelasController extends Controller
 
         $attendanceQuery = Attendance::where('class_room_id', $classRoomId)
             ->where('teacher_id', $teacher->id)
+            ->where('subject_id', $subjectId)
             ->orderBy('date', 'desc');
 
         $attendanceRecords = (clone $attendanceQuery)->get();
@@ -108,6 +110,8 @@ class KelasController extends Controller
                 'academic_year' => $classRoom->academicYear->name ?? '-',
                 'program' => $classRoom->program->short_name ?? '-',
                 'student_count' => $students->count(),
+                'subject_id' => $teachingAssignment->subject->id,
+                'subject_name' => $teachingAssignment->subject->name,
             ],
             'students' => $studentRows,
             'attendanceDates' => $attendanceDates,
@@ -117,7 +121,7 @@ class KelasController extends Controller
         ]);
     }
 
-    public function export(Request $request, $classRoomId)
+    public function export(Request $request, $classRoomId, $subjectId)
     {
         $user = $request->user();
         $teacher = $user->teacher;
@@ -126,9 +130,10 @@ class KelasController extends Controller
             abort(403, 'Teacher profile not found');
         }
 
-        // Verify teacher mengajar kelas ini
+        // Verify teacher mengajar kelas ini dan mata pelajaran ini
         $teachingAssignment = \App\Models\TeachingAssignment::where('teacher_id', $teacher->id)
             ->where('class_room_id', $classRoomId)
+            ->where('subject_id', $subjectId)
             ->first();
 
         if (!$teachingAssignment) {
@@ -147,6 +152,7 @@ class KelasController extends Controller
         // Get all attendance records for summary calculation
         $attendanceRecords = Attendance::where('class_room_id', $classRoomId)
             ->where('teacher_id', $teacher->id)
+            ->where('subject_id', $subjectId)
             ->orderBy('date', 'asc')
             ->get()
             ->groupBy('student_id');

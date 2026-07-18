@@ -268,6 +268,7 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
     - **Model:** `app/Models/AcademicEvent.php` (menampung field `title`, `type`, `start_date`, `end_date`, `description`).
     - **Migrasi:** `database/migrations/2026_07_01_200725_create_academic_events_table.php`.
     - **Filament Page (Kalender):** `app/Filament/Pages/AcademicCalendar.php` (logika traversal bulan, create/edit actions) dan `resources/views/filament/pages/academic-calendar.blade.php` (grid bulan, CSS styling, modifikator modal).
+    - **Kalender Portal Guru:** `app/Http/Controllers/Guru/KalenderAkademikController.php` (Menyiapkan data event yang overlap dengan bulan berjalan menggunakan query builder lalu memformat hari) dan `resources/js/Pages/Guru/KalenderAkademik.vue` (Tampilan grid read-only, didesain konsisten dengan halaman "Kehadiran Saya" menggunakan header blok solid, grid kotak berjarak (gap), dan modal detail bertema DaisyUI gelap).
     - **Integrasi Absensi (Guru):** `app/Http/Controllers/Guru/AbsensiController.php` (memblokir akses form absensi saat hari libur di method `show` dan `store`).
     - **Integrasi Cronjob:** `app/Console/Commands/MarkAbsentTeachers.php` (melewati penandaan TIDAK_HADIR jika hari libur).
     - **Komponen Notifikasi (Portal Guru):** `resources/js/Components/FlashSuccessPopup.vue` (diperbarui agar mendukung `type="error"`) dan `resources/js/Layouts/GuruLayout.vue` (mengintegrasikan popup ini secara global di semua halaman portal Guru).
@@ -275,7 +276,7 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
     - Kalender dirender menggunakan pola grid 7 kolom (Senin-Minggu) visual yang konsisten dengan kalender kehadiran guru.
     - Event bisa berdurasi 1 hari atau rentang beberapa hari (`start_date` sampai `end_date`). Toggle "Rentang beberapa hari?" (`is_range`) mengontrol penampakan `end_date` secara interaktif. Jika dinonaktifkan, `end_date` otomatis disamakan dengan `start_date`.
     - Warna grid disesuaikan per jenis event: merah (holiday), oranye (exam), biru (meeting), hijau (activity), abu-abu (other).
-    - Event di kalender dapat diklik untuk memunculkan detail modal yang berisi opsi "Edit Event" (memanggil Action Filament `$wire.mountAction('editEvent')`) dan "Hapus Event" (konfirmasi delete).
+    - Event di kalender dapat diklik untuk memunculkan detail modal yang berisi opsi "Edit Event" (memanggil Action Filament `$wire.mountAction('editEvent')`) dan "Hapus Event" (konfirmasi delete). Guru juga memiliki akses *read-only* ke fitur kalender ini via portal Guru, modal detail di sisi guru tidak memuat opsi edit/hapus.
     - Jika Guru mencoba mengakses atau menyimpan absensi siswa pada tanggal yang ditandai `holiday`, request dialihkan ke Dashboard dengan pesan flash `error` dan ditangkap langsung oleh global modal popup.
 - **Catatan Teknis Penting (Date Casting di PHP):**
     - Cast Eloquent format seperti `date:Y-m-d` di model `AcademicEvent.php` **hanya memengaruhi hasil serialisasi** (seperti `toArray()`, `toJson()`, atau Inertia props).
@@ -305,3 +306,40 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
     - *"Ganti warna sparkline kehadiran"*: Buka `app/Filament/Widgets/AttendanceTrendChart.php` dan sesuaikan warna di bagian konfigurasi dataset chart.
     - *"Tambah jumlah acara yang ditampilkan di dashboard"*: Buka method `query()` di dalam `app/Filament/Widgets/UpcomingEventsWidget.php` dan ubah nilai `limit(5)`.
     - *"Ubah logika status warna kehadiran guru hari ini"*: Buka `app/Filament/Widgets/DashboardStatsOverview.php` dan edit baris logika `$attendanceColor`.
+
+---
+
+## 14. Struktur Navigasi (Sidebar) - Portal Guru
+
+- **Tujuan:** Menyediakan navigasi utama di portal guru dengan UI berkonsep *drill-down / accordion* (mendukung *multi-open* dan *auto-expand* berdasarkan route aktif).
+- **Lokasi File Kunci:** `resources/js/Components/Guru/Sidebar.vue`.
+- **Business Rules:**
+    - Sidebar terbagi atas dua tipe item menu: *Standalone* (contoh: Dashboard, Profile) dan *Group* (contoh: Absensi Siswa, Lainnya).
+    - Baik *Standalone item* maupun *child item* di dalam *Group* kini menggunakan ikon SVG spesifik (misal: ikon rekap, kalender, kehadiran) yang didefinisikan dalam properti `icon` pada struktur datanya.
+    - Status ekspansi (*expanded state*) per grup disimpan dalam state `ref({})` (contoh: `expandedGroups.value['Absensi Siswa']`).
+    - **Auto-expand:** Jika URL/route saat ini adalah bagian dari *children* suatu grup (misal: `/guru/rekap-absen` di dalam 'Absensi Siswa'), grup tersebut akan secara otomatis terbuka (*expanded*) saat halaman di-*refresh/load*.
+    - **Animasi:** Efek buka-tutup grup menu menggunakan utilitas Tailwind `grid-template-rows: 0fr -> 1fr` pada kontainer animasi agar tidak ada delay aneh seperti yang dialami teknik `max-height`.
+- **Task Mapping / Jika user berkata...**
+    - *"Tambah menu baru di sidebar guru"*: Buka `Sidebar.vue` dan tambahkan entri pada konstanta `menuStructure`. Pilih `type: 'standalone'` atau `type: 'group'`. Jangan lupa sertakan properti `icon` meskipun ia berada di dalam grup.
+
+---
+
+## 15. Isolasi Data Kelas Berdasarkan Mata Pelajaran (Portal Guru)
+
+- **Tujuan:** Menghindari bentrokan jadwal dan kesalahan rekap absensi saat seorang guru mengajar lebih dari satu mata pelajaran di kelas yang sama.
+- **Lokasi File Kunci:** 
+    - `app/Http/Controllers/Guru/DashboardController.php`
+    - `app/Http/Controllers/Guru/KelasController.php`
+    - `resources/js/Pages/Guru/Dashboard.vue`
+    - `resources/js/Pages/Guru/RekapAbsen.vue`
+    - `resources/js/Pages/Guru/KelasDetail.vue`
+- **Business Rules:**
+    - Di Dashboard dan Rekap Absen, *card* dikelompokkan secara murni berdasarkan iterasi entitas `TeachingAssignment` (Kombinasi unik `class_room_id` + `subject_id`).
+    - *Card* diurutkan secara alfabetis (`->sortBy('class_name')`) agar *card* dari kelas yang sama selalu tampil berdampingan.
+    - Judul Card di UI murni menggunakan Nama Kelas (misal: "11 MIPA 2"), sedangkan label spesifik Mata Pelajaran (misal: "Matematika") dipisahkan secara elegan ke dalam komponen *badge* (Pill) di bawahnya untuk UI yang modern dan *clean*.
+    - Jika guru belum memiliki jadwal sama sekali untuk suatu penugasan mengajar, UI akan menampilkan teks *italic* "Belum ada jadwal yang diatur" (pada ukuran `text-sm sm:text-base`).
+    - **Rute Detail Kelas & Export CSV:** Mewajibkan 2 buah parameter (`/kelas/{classRoom}/{subject}`). 
+    - Controller `KelasController` di-*hardcode* untuk selalu menempelkan kondisi `->where('subject_id', $subjectId)` pada setiap pencarian tabel `Attendance` untuk mencegah kebocoran (*data bleeding*) absen dari mapel lain di kelas yang sama.
+- **Task Mapping / Jika user berkata...**
+    - *"Tampilkan informasi tambahan di card kelas guru"*: Buka `DashboardController.php`, tambahkan datanya pada hasil kembalian (return array) di iterasi `$myClasses`, lalu tampilkan di `Dashboard.vue` atau `RekapAbsen.vue`.
+    - *"Ubah teks ketika jadwal guru kosong"*: Cari blok `v-else` di `Dashboard.vue` dan ubah teks "Belum ada jadwal yang diatur".

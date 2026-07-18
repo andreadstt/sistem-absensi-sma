@@ -137,7 +137,7 @@ const updateAttendance = () => {
 };
 
 const changeMonth = () => {
-    router.get(route('guru.kelas.show', props.classRoom.id), {
+    router.get(route('guru.kelas.show', [props.classRoom.id, props.classRoom.subject_id]), {
         month: selectedMonth.value || undefined,
     }, {
         preserveScroll: true,
@@ -147,9 +147,9 @@ const changeMonth = () => {
 </script>
 
 <template>
-    <Head :title="`Detail Kelas - ${classRoom.name}`" />
+    <Head :title="`Detail Kelas - ${classRoom.name} - ${classRoom.subject_name}`" />
 
-    <GuruLayout :title="`${classRoom.name}`">
+    <GuruLayout :title="`${classRoom.name} - ${classRoom.subject_name}`">
         <div class="space-y-6">
             <!-- Success/Error Message -->
             <div v-if="flash.success" class="alert-message alert-success">
@@ -181,7 +181,7 @@ const changeMonth = () => {
                         </div>
                     </div>
                     <a 
-                        :href="route('guru.kelas.export', classRoom.id)" 
+                        :href="route('guru.kelas.export', [classRoom.id, classRoom.subject_id])" 
                         class="btn-formal"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

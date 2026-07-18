@@ -37,6 +37,21 @@ class Schedule extends Model
                 'class_room_id' => $schedule->class_room_id,
             ]);
         });
+
+        static::deleted(function (Schedule $schedule) {
+            // Auto-delete TeachingAssignment if this was the last schedule for it
+            $hasOtherSchedules = static::where('teacher_id', $schedule->teacher_id)
+                ->where('subject_id', $schedule->subject_id)
+                ->where('class_room_id', $schedule->class_room_id)
+                ->exists();
+
+            if (!$hasOtherSchedules) {
+                TeachingAssignment::where('teacher_id', $schedule->teacher_id)
+                    ->where('subject_id', $schedule->subject_id)
+                    ->where('class_room_id', $schedule->class_room_id)
+                    ->delete();
+            }
+        });
     }
 
     /**

@@ -75,13 +75,14 @@ Route::middleware('guest')->group(function () {
 // Guru Portal Routes
 Route::middleware(['auth', GuruMiddleware::class, 'force-change-password'])->prefix('guru')->group(function () {
     Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('guru.dashboard');
+    Route::get('/kalender-akademik', [\App\Http\Controllers\Guru\KalenderAkademikController::class, 'index'])->name('guru.kalender-akademik.index');
     Route::get('/rekap-absen', [GuruDashboardController::class, 'rekapAbsen'])->name('guru.rekap.absen');
     Route::get('/kehadiran', [KehadiranController::class, 'index'])->name('guru.kehadiran.index');
     Route::get('/profile', [\App\Http\Controllers\Guru\ProfileController::class, 'show'])->name('guru.profile.show');
     Route::put('/profile', [\App\Http\Controllers\Guru\ProfileController::class, 'update'])->name('guru.profile.update');
     Route::post('/profile/avatar', [\App\Http\Controllers\Guru\ProfileController::class, 'updateAvatar'])->name('guru.profile.updateAvatar');
-    Route::get('/kelas/{classRoom}', [\App\Http\Controllers\Guru\KelasController::class, 'show'])->name('guru.kelas.show');
-    Route::get('/kelas/{classRoom}/export', [\App\Http\Controllers\Guru\KelasController::class, 'export'])->name('guru.kelas.export');
+    Route::get('/kelas/{classRoom}/{subject}', [\App\Http\Controllers\Guru\KelasController::class, 'show'])->name('guru.kelas.show');
+    Route::get('/kelas/{classRoom}/{subject}/export', [\App\Http\Controllers\Guru\KelasController::class, 'export'])->name('guru.kelas.export');
     Route::get('/absensi/{classRoom}/{subject}/{date}', [AbsensiController::class, 'show'])->name('guru.absensi.show');
     Route::post('/absensi', [AbsensiController::class, 'store'])->name('guru.absensi.store');
     Route::post('/attendance/update', [\App\Http\Controllers\Guru\KelasController::class, 'updateAttendance'])->name('guru.attendance.update');

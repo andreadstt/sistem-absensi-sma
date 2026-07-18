@@ -44,17 +44,18 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Get all teaching assignments with class info
+        // Get all teaching assignments with class info (1 assignment = 1 Class + 1 Subject)
         $myClasses = \App\Models\TeachingAssignment::where('teacher_id', $teacher->id)
             ->with(['classRoom.academicYear', 'classRoom.program', 'subject', 'classRoom.students'])
             ->get()
-            ->groupBy('class_room_id')
-            ->map(function ($assignments, $classRoomId) use ($teacher) {
-                $classRoom = $assignments->first()->classRoom;
+            ->map(function ($assignment) use ($teacher) {
+                $classRoom = $assignment->classRoom;
+                $subject = $assignment->subject;
                 
-                // Get schedules for this class
+                // Get schedules for this specific class AND subject
                 $classSchedules = Schedule::where('teacher_id', $teacher->id)
-                    ->where('class_room_id', $classRoomId)
+                    ->where('class_room_id', $classRoom->id)
+                    ->where('subject_id', $subject->id)
                     ->orderBy('weekday')
                     ->orderBy('time_slot')
                     ->get()
@@ -83,20 +84,17 @@ class DashboardController extends Controller
                     });
                 
                 return [
-                    'class_room_id' => $classRoomId,
+                    'class_room_id' => $classRoom->id,
+                    'subject_id' => $subject->id,
                     'class_name' => $classRoom->full_name ?? $classRoom->name,
+                    'subject_name' => $subject->name,
+                    'card_title' => ($classRoom->full_name ?? $classRoom->name) . ' - ' . $subject->name,
                     'student_count' => $classRoom->students->count(),
                     'academic_year' => $classRoom->academicYear->name ?? '-',
                     'program' => $classRoom->program->short_name ?? '-',
-                    'subjects' => $assignments->map(function ($assignment) {
-                        return [
-                            'id' => $assignment->subject_id,
-                            'name' => $assignment->subject->name,
-                        ];
-                    })->values(),
                     'schedules' => $classSchedules,
                 ];
-            })->values();
+            })->sortBy('class_name')->values();
 
         // Statistics
         $totalSchedulesToday = $schedules->count();
@@ -134,17 +132,18 @@ class DashboardController extends Controller
             ]);
         }
 
-        // Get all teaching assignments with class info
+        // Get all teaching assignments with class info (1 assignment = 1 Class + 1 Subject)
         $myClasses = \App\Models\TeachingAssignment::where('teacher_id', $teacher->id)
             ->with(['classRoom.academicYear', 'classRoom.program', 'subject', 'classRoom.students'])
             ->get()
-            ->groupBy('class_room_id')
-            ->map(function ($assignments, $classRoomId) use ($teacher) {
-                $classRoom = $assignments->first()->classRoom;
+            ->map(function ($assignment) use ($teacher) {
+                $classRoom = $assignment->classRoom;
+                $subject = $assignment->subject;
                 
-                // Get schedules for this class
+                // Get schedules for this specific class AND subject
                 $classSchedules = Schedule::where('teacher_id', $teacher->id)
-                    ->where('class_room_id', $classRoomId)
+                    ->where('class_room_id', $classRoom->id)
+                    ->where('subject_id', $subject->id)
                     ->orderBy('weekday')
                     ->orderBy('time_slot')
                     ->get()
@@ -168,20 +167,17 @@ class DashboardController extends Controller
                     });
                 
                 return [
-                    'class_room_id' => $classRoomId,
+                    'class_room_id' => $classRoom->id,
+                    'subject_id' => $subject->id,
                     'class_name' => $classRoom->full_name ?? $classRoom->name,
+                    'subject_name' => $subject->name,
+                    'card_title' => ($classRoom->full_name ?? $classRoom->name) . ' - ' . $subject->name,
                     'student_count' => $classRoom->students->count(),
                     'academic_year' => $classRoom->academicYear->name ?? '-',
                     'program' => $classRoom->program->short_name ?? '-',
-                    'subjects' => $assignments->map(function ($assignment) {
-                        return [
-                            'id' => $assignment->subject_id,
-                            'name' => $assignment->subject->name,
-                        ];
-                    })->values(),
                     'schedules' => $classSchedules,
                 ];
-            })->values();
+            })->sortBy('class_name')->values();
 
         return Inertia::render('Guru/RekapAbsen', [
             'myClasses' => $myClasses,

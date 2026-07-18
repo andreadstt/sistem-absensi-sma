@@ -34,18 +34,17 @@ defineProps({
                     <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
                         <Link
                             v-for="classData in myClasses"
-                            :key="classData.class_room_id"
-                            :href="route('guru.kelas.show', classData.class_room_id)"
+                            :key="classData.class_room_id + '-' + classData.subject_id"
+                            :href="route('guru.kelas.show', [classData.class_room_id, classData.subject_id])"
                             class="class-card p-3 sm:p-4 md:p-5"
                         >
                             <h3 class="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 sm:mb-3">{{ classData.class_name }}</h3>
-                            
 
                             <div class="mb-3 sm:mb-4">
                                 <p class="text-xs text-gray-600 font-semibold mb-2">Mata Pelajaran:</p>
                                 <div class="flex flex-wrap gap-2">
-                                    <span v-for="subject in classData.subjects" :key="subject.id" class="subject-tag">
-                                        {{ subject.name }}
+                                    <span class="subject-tag">
+                                        {{ classData.subject_name }}
                                     </span>
                                 </div>
                             </div>
@@ -62,6 +61,10 @@ defineProps({
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div v-else class="mb-3 sm:mb-4 pt-3 sm:pt-4 border-t border-gray-200">
+                                <p class="text-xs text-gray-600 font-semibold mb-2">Jadwal:</p>
+                                <p class="text-gray-500 text-sm sm:text-base italic">Belum ada jadwal yang diatur</p>
                             </div>
 
                             <div class="flex items-center justify-center gap-2 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 text-indigo-600 font-semibold text-xs sm:text-sm group-hover:text-indigo-700">

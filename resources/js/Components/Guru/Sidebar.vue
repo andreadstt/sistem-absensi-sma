@@ -72,7 +72,7 @@ const menuStructure = [
         label: 'Lainnya',
         icon: 'more',
         items: [
-            // { label: 'Kehadiran Saya', route: 'guru.kehadiran.index', icon: 'kehadiran' }, // Hidden for now
+            { label: 'Kehadiran Saya', route: 'guru.kehadiran.index', icon: 'kehadiran' },
             { label: 'Kalender Akademik', route: 'guru.kalender-akademik.index', icon: 'calendar' }
         ]
     },

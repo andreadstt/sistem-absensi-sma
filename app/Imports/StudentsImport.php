@@ -21,10 +21,7 @@ class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
 
     public function model(array $row)
     {
-        // Find class room by name
-        $classRoom = ClassRoom::where('name', trim($row['kelas'] ?? ''))
-            ->orWhere('full_name', trim($row['kelas'] ?? ''))
-            ->first();
+        $classRoom = ClassRoom::where('name', trim($row['kelas'] ?? ''))->first();
 
         if (!$classRoom) {
             $this->skippedCount++;
@@ -40,12 +37,19 @@ class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
             return null;
         }
 
+        $gender = strtoupper(trim($row['jenis_kelamin'] ?? 'L'));
+        if ($gender === 'P' || $gender === 'PEREMPUAN') {
+            $gender = 'F';
+        } else {
+            $gender = 'M';
+        }
+
         $this->successCount++;
 
         return new Student([
-            'name' => trim($row['nama']),
-            'nis' => trim($row['nis']),
-            'email' => trim($row['email'] ?? '') ?: null,
+            'name' => trim((string)$row['nama']),
+            'nis' => trim((string)$row['nis']),
+            'gender' => $gender,
             'class_room_id' => $classRoom->id,
         ]);
     }
@@ -54,9 +58,9 @@ class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
     {
         return [
             'nama' => 'required|string|max:255',
-            'nis' => 'required|string|max:50',
+            'nis' => 'required|max:50',
+            'jenis_kelamin' => 'required|string',
             'kelas' => 'required|string',
-            'email' => 'nullable|email|max:255',
         ];
     }
 
@@ -65,8 +69,8 @@ class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
         return [
             'nama.required' => 'Nama siswa wajib diisi',
             'nis.required' => 'NIS wajib diisi',
+            'jenis_kelamin.required' => 'Jenis Kelamin wajib diisi',
             'kelas.required' => 'Kelas wajib diisi',
-            'email.email' => 'Format email tidak valid',
         ];
     }
 

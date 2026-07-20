@@ -38,7 +38,7 @@ class ListStudents extends ListRecords
                         ->label('File Excel')
                         ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])
                         ->required()
-                        ->helperText('Upload file Excel dengan format: Nama, NIS, Kelas, Email (Opsional)')
+                        ->helperText('Upload file Excel dengan format: Nama, NIS, Jenis Kelamin, Kelas')
                 ])
                 ->action(function (array $data) {
                     try {

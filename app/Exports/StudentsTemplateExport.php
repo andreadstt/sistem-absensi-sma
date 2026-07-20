@@ -15,9 +15,9 @@ class StudentsTemplateExport implements FromArray, WithHeadings, WithStyles
     {
         // Return sample data
         return [
-            ['Budi Santoso', '2024001', '10 IPA 1', 'budi@example.com'],
-            ['Ani Susanti', '2024002', '10 IPA 1', 'ani@example.com'],
-            ['Citra Dewi', '2024003', '11 IPS 2', ''],
+            ['Budi Santoso', '2024001', 'L', '10 IPA 1'],
+            ['Ani Susanti', '2024002', 'P', '10 IPA 1'],
+            ['Citra Dewi', '2024003', 'P', '11 IPS 2'],
         ];
     }
 
@@ -26,8 +26,8 @@ class StudentsTemplateExport implements FromArray, WithHeadings, WithStyles
         return [
             'Nama',
             'NIS',
+            'Jenis Kelamin',
             'Kelas',
-            'Email (Opsional)',
         ];
     }
 

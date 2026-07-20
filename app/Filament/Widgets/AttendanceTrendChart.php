@@ -12,6 +12,11 @@ class AttendanceTrendChart extends ChartWidget
     
     protected static ?int $sort = 2;
 
+    public static function canView(): bool
+    {
+        return false;
+    }
+
     protected function getData(): array
     {
         $chartData = Cache::remember('teacher_attendance_chart_7_days', 300, function () {

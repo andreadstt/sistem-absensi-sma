@@ -11,8 +11,7 @@ class UpcomingEventsWidget extends BaseWidget
 {
     protected static ?int $sort = 4;
     
-    // Setting column span to 1 so it takes half width on large screens
-    protected int | string | array $columnSpan = 1;
+    protected int | string | array $columnSpan = 'full';
 
     protected static ?string $heading = 'Acara Mendatang';
 

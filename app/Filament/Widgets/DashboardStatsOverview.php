@@ -50,14 +50,15 @@ class DashboardStatsOverview extends BaseWidget
             Stat::make('Total Mapel', Subject::count())
                 ->icon('heroicon-o-book-open')
                 ->color('warning'),
-            Stat::make('Kehadiran Guru (Hari Ini)', "{$hadir}/{$jadwal} Hadir")
-                ->description('Berdasarkan sesi jadwal aktif')
-                ->color($attendanceColor)
-                ->chart($sparklineData),
+            // Stat::make('Kehadiran Guru (Hari Ini)', "{$hadir}/{$jadwal} Hadir")
+            //     ->description('Berdasarkan sesi jadwal aktif')
+            //     ->color($attendanceColor)
+            //     ->chart($sparklineData),
             Stat::make('Pendaftaran Pending', $pendingRegistrations)
                 ->description('Registrasi guru baru')
                 ->icon('heroicon-o-user-plus')
-                ->color($pendingRegistrations > 0 ? 'danger' : 'gray'),
+                ->color($pendingRegistrations > 0 ? 'danger' : 'gray')
+                ->extraAttributes(['class' => 'lg:col-span-2']),
         ];
     }
 }

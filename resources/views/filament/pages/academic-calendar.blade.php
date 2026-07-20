@@ -134,7 +134,9 @@
         </x-filament::section>
 
         <x-filament::section compact>
-            <div class="ta-cal-grid">
+            <div class="overflow-x-auto w-full">
+                <div class="min-w-[700px]">
+                    <div class="ta-cal-grid">
                 @foreach (['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as $dayName)
                     <div class="ta-cal-head">{{ $dayName }}</div>
                 @endforeach
@@ -177,6 +179,8 @@
                         @endif
                     </div>
                 @endforeach
+            </div>
+                </div>
             </div>
         </x-filament::section>
 

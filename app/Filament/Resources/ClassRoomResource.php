@@ -105,7 +105,7 @@ class ClassRoomResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('full_name')
+                Tables\Columns\TextColumn::make('name')
                     ->label('Nama Kelas')
                     ->searchable(['name', 'grade_level', 'section', 'headTeacher.name'])
                     ->sortable()
@@ -187,7 +187,10 @@ class ClassRoomResource extends Resource
             ])
             ->defaultSort('grade_level')
             ->groups([
-                Group::make('grade_level_with_label')->collapsible(),
+                Group::make('grade_level')
+                    ->label('Tingkat Kelas')
+                    ->getTitleFromRecordUsing(fn ($record) => "Kelas {$record->grade_level}")
+                    ->collapsible(),
             ]);
     }
 

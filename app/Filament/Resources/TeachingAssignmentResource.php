@@ -95,7 +95,7 @@ class TeachingAssignmentResource extends Resource
                     ->searchable()
                     ->badge()
                     ->color('info'),
-                Tables\Columns\TextColumn::make('classRoom.full_name')
+                Tables\Columns\TextColumn::make('classRoom.name')
                     ->label('Kelas')
                     ->sortable()
                     ->searchable()

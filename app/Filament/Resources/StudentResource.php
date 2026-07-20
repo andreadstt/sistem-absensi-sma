@@ -99,7 +99,7 @@ class StudentResource extends Resource
                         'M' => 'Laki-laki',
                         'F' => 'Perempuan',
                     }),
-                Tables\Columns\TextColumn::make('classRoom.full_name')
+                Tables\Columns\TextColumn::make('classRoom.name')
                     ->label('Kelas')
                     ->sortable(false)
                     ->searchable()

@@ -213,7 +213,7 @@ const formatDate = (date) => {
                 </div>
 
                 <!-- Schedule detail table -->
-                <div class="overflow-hidden rounded-lg border border-gray-700">
+                <div class="overflow-x-auto w-full rounded-lg border border-gray-700">
                     <table class="w-full text-sm table-fixed">
                         <thead>
                             <tr class="bg-gray-800 text-xs text-gray-400 uppercase tracking-wide">

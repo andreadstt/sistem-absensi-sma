@@ -270,7 +270,7 @@ const changeMonth = () => {
                     </div>
                 </div>
                 
-                <div class="table-wrapper">
+                <div class="overflow-x-auto w-full border border-gray-200 rounded-lg shadow-sm">
                     <table class="attendance-table">
                         <thead>
                             <tr>

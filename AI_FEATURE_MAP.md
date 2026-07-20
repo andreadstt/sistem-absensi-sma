@@ -293,19 +293,20 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
 
 - **Tujuan:** Memperkaya halaman utama Admin (`/admin`) dengan visualisasi metrik utama, tren kehadiran, dan daftar singkat (registrasi guru & acara akademik terdekat).
 - **Lokasi File Kunci:**
-    - `app/Filament/Widgets/DashboardStatsOverview.php`: Menampilkan Stat cards (Total Siswa, Guru, Kelas, Mapel, Kehadiran Guru Hari Ini dengan Sparkline, dan Pendaftaran Pending). `$sort = 1`.
-    - `app/Filament/Widgets/AttendanceTrendChart.php`: Line Chart tren kehadiran guru 7 hari terakhir. Menggunakan cache untuk performa. `$sort = 2`.
-    - `app/Filament/Widgets/LatestTeacherRegistrations.php`: TableWidget yang menampilkan maksimal 5 pendaftaran guru terbaru bersatus `pending`. Ditata agar lebarnya 1 kolom (`columnSpan = 1`). `$sort = 3`.
-    - `app/Filament/Widgets/UpcomingEventsWidget.php`: TableWidget tanpa pagination/header yang menampilkan maksimal 5 `AcademicEvent` yang belum lewat. Menampilkan badge berwarna sesuai dengan tipe acara. Lebarnya 1 kolom (`columnSpan = 1`). `$sort = 4`.
+    - `app/Filament/Widgets/DashboardStatsOverview.php`: Menampilkan Stat cards (Total Siswa, Guru, Kelas, Mapel, Kehadiran Guru Hari Ini dengan Sparkline, dan Pendaftaran Pending). `$sort = 1`. *Catatan UI: Saat ini stat Kehadiran Guru di-comment agar tersembunyi sementara. Pendaftaran Pending disuntikkan `extraAttributes(['class' => 'lg:col-span-2'])` agar memanjang mengisi gap layout.*
+    - `app/Filament/Widgets/AttendanceTrendChart.php`: Line Chart tren kehadiran guru 7 hari terakhir. Menggunakan cache untuk performa. `$sort = 2`. *Catatan UI: Saat ini di-hide sementara menggunakan `canView(): bool { return false; }`.*
+    - `app/Filament/Widgets/StudentAttendanceTrendChart.php`: Line Chart tren kehadiran siswa (unik) 7 hari terakhir. Menggunakan 1 query agregasi efisien (Best Practice `GROUP BY`) tanpa N+1. `$sort = 3`.
+    - `app/Filament/Widgets/LatestTeacherRegistrations.php`: TableWidget yang menampilkan maksimal 5 pendaftaran guru terbaru bersatus `pending`. Ditata agar lebarnya setengah layar (`columnSpan = 1`). `$sort = 3`.
+    - `app/Filament/Widgets/UpcomingEventsWidget.php`: TableWidget tanpa pagination/header yang menampilkan maksimal 5 `AcademicEvent` yang belum lewat. Lebarnya dibuat membentang penuh ke bawah grafik/tabel di atasnya (`columnSpan = 'full'`). `$sort = 4`.
     - `app/Services/TeacherAttendanceService.php`: Method `getAttendanceStatsForDate($date)` digunakan untuk menyuplai data kehadiran ke Widget Overview dan Chart (dengan caching 5 menit).
 - **Business Rules:**
     - Widget secara otomatis dideteksi oleh Filament berkat `->discoverWidgets()` di `AdminPanelProvider.php`.
     - Pengurutan vertikal (urutan tampil) dikendalikan secara kaku menggunakan properti statis `$sort`.
-    - Widget Registrasi Terbaru dan Acara Mendatang secara sengaja dibuat berdampingan (masing-masing mengambil separuh lebar layar besar) menggunakan `$columnSpan = 1` pada pengaturan grid kolom default (2) Filament.
+    - Untuk merapikan layout asimetris, tabel di baris paling bawah diset `columnSpan = 'full'` agar menjadi fondasi yang rapi, dan kotak *Stat* ganjil dirapikan menggunakan `extraAttributes`.
 - **Task Mapping / Jika user berkata...**
-    - *"Ganti warna sparkline kehadiran"*: Buka `app/Filament/Widgets/AttendanceTrendChart.php` dan sesuaikan warna di bagian konfigurasi dataset chart.
+    - *"Tampilkan kembali (Unhide) statistik kehadiran guru"*: Buka `app/Filament/Widgets/DashboardStatsOverview.php` lalu *uncomment* bagian `Stat::make('Kehadiran Guru...')`. Buka `app/Filament/Widgets/AttendanceTrendChart.php` lalu hapus fungsi `canView()`.
+    - *"Ganti warna sparkline kehadiran"*: Buka `app/Filament/Widgets/StudentAttendanceTrendChart.php` atau `AttendanceTrendChart.php` dan sesuaikan warna di konfigurasi *dataset*.
     - *"Tambah jumlah acara yang ditampilkan di dashboard"*: Buka method `query()` di dalam `app/Filament/Widgets/UpcomingEventsWidget.php` dan ubah nilai `limit(5)`.
-    - *"Ubah logika status warna kehadiran guru hari ini"*: Buka `app/Filament/Widgets/DashboardStatsOverview.php` dan edit baris logika `$attendanceColor`.
 
 ---
 

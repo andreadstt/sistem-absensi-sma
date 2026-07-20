@@ -1,0 +1,1 @@
+{"class_room_id":"6","date":null,"export_type":"semester","semester":"1","year":"2026\/2027"}

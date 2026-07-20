@@ -9,6 +9,7 @@ use App\Exports\AttendanceSummaryExport;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Http\Request;
 
 class WaliKelasController extends Controller
 {
@@ -55,7 +56,7 @@ class WaliKelasController extends Controller
     /**
      * Display the specified class room details for head teacher.
      */
-    public function show(ClassRoom $classRoom)
+    public function show(Request $request, ClassRoom $classRoom)
     {
         $user = Auth::user();
         $teacher = $user->teacher;
@@ -68,6 +69,33 @@ class WaliKelasController extends Controller
         if ($classRoom->head_teacher_id !== $teacher->id) {
             return redirect()->route('guru.wali-kelas.index')
                 ->with('error', 'Anda tidak memiliki akses ke kelas ini');
+        }
+
+        // Semester Logic
+        $now = now()->format('Y-m-d');
+        $semesters = \App\Models\Semester::where('academic_year_id', $classRoom->academic_year_id)->get();
+        
+        $activeSemester = null;
+        $requestedSemesterId = $request->query('semester_id');
+        
+        if ($requestedSemesterId) {
+            $activeSemester = $semesters->firstWhere('id', $requestedSemesterId);
+        }
+        
+        if (!$activeSemester) {
+            $activeSemester = $semesters->first(function ($s) use ($now) {
+                return $s->start_date->format('Y-m-d') <= $now && $s->end_date->format('Y-m-d') >= $now;
+            });
+            
+            if (!$activeSemester) {
+                $activeSemester = $semesters->filter(function ($s) use ($now) {
+                    return $s->end_date->format('Y-m-d') < $now;
+                })->sortByDesc('end_date')->first();
+                
+                if (!$activeSemester) {
+                    $activeSemester = $semesters->firstWhere('type', '1');
+                }
+            }
         }
 
         // Get detailed class information
@@ -89,13 +117,21 @@ class WaliKelasController extends Controller
         $students = $classRoom->students()
             ->with('classRoom')
             ->get()
-            ->map(function ($student) use ($classRoom) {
+            ->map(function ($student) use ($classRoom, $activeSemester) {
                 // Get attendance records for this student in this class with subject details
-                $attendanceRecords = \App\Models\Attendance::where('class_room_id', $classRoom->id)
+                $attendanceQuery = \App\Models\Attendance::where('class_room_id', $classRoom->id)
                     ->where('student_id', $student->id)
                     ->with('subject')
-                    ->orderBy('date', 'desc')
-                    ->get();
+                    ->orderBy('date', 'desc');
+                    
+                if ($activeSemester) {
+                    $attendanceQuery->whereBetween('date', [
+                        $activeSemester->start_date->format('Y-m-d'),
+                        $activeSemester->end_date->format('Y-m-d')
+                    ]);
+                }
+                
+                $attendanceRecords = $attendanceQuery->get();
 
                 // Calculate stats
                 $stats = [
@@ -146,7 +182,14 @@ class WaliKelasController extends Controller
             });
 
         // Calculate class-wide attendance summary
-        $allAttendances = \App\Models\Attendance::where('class_room_id', $classRoom->id)->get();
+        $classAttendancesQuery = \App\Models\Attendance::where('class_room_id', $classRoom->id);
+        if ($activeSemester) {
+            $classAttendancesQuery->whereBetween('date', [
+                $activeSemester->start_date->format('Y-m-d'),
+                $activeSemester->end_date->format('Y-m-d')
+            ]);
+        }
+        $allAttendances = $classAttendancesQuery->get();
         
         $classAttendanceSummary = [
             'total_hadir' => $allAttendances->where('status', 'HADIR')->count(),
@@ -163,19 +206,30 @@ class WaliKelasController extends Controller
             'female_count' => $classRoom->students->where('gender', 'F')->count(),
         ];
 
+        // Format semesters for Vue
+        $semestersData = $semesters->map(function($s) {
+            $typeLabel = $s->type == '1' ? 'Ganjil' : 'Genap';
+            return [
+                'id' => $s->id,
+                'label' => "Semester {$typeLabel} ({$s->start_date->format('M Y')} - {$s->end_date->format('M Y')})"
+            ];
+        });
+
         return Inertia::render('Guru/WaliKelas/Show', [
             'classRoom' => $classData,
             'students' => $students,
             'stats' => $stats,
             'classAttendanceSummary' => $classAttendanceSummary,
             'teacherName' => $teacher->name,
+            'semesters' => $semestersData,
+            'activeSemesterId' => $activeSemester ? $activeSemester->id : null,
         ]);
     }
 
     /**
      * Export attendance summary to Excel
      */
-    public function export(ClassRoom $classRoom)
+    public function export(Request $request, ClassRoom $classRoom)
     {
         $user = Auth::user();
         $teacher = $user->teacher;
@@ -190,6 +244,33 @@ class WaliKelasController extends Controller
                 ->with('error', 'Anda tidak memiliki akses ke kelas ini');
         }
 
+        // Semester Logic
+        $now = now()->format('Y-m-d');
+        $semesters = \App\Models\Semester::where('academic_year_id', $classRoom->academic_year_id)->get();
+        
+        $activeSemester = null;
+        $requestedSemesterId = $request->query('semester_id');
+        
+        if ($requestedSemesterId) {
+            $activeSemester = $semesters->firstWhere('id', $requestedSemesterId);
+        }
+        
+        if (!$activeSemester) {
+            $activeSemester = $semesters->first(function ($s) use ($now) {
+                return $s->start_date->format('Y-m-d') <= $now && $s->end_date->format('Y-m-d') >= $now;
+            });
+            
+            if (!$activeSemester) {
+                $activeSemester = $semesters->filter(function ($s) use ($now) {
+                    return $s->end_date->format('Y-m-d') < $now;
+                })->sortByDesc('end_date')->first();
+                
+                if (!$activeSemester) {
+                    $activeSemester = $semesters->firstWhere('type', '1');
+                }
+            }
+        }
+
         // Get class data
         $classData = [
             'name' => $classRoom->name,
@@ -202,12 +283,20 @@ class WaliKelasController extends Controller
         $students = $classRoom->students()
             ->with('classRoom')
             ->get()
-            ->map(function ($student) use ($classRoom) {
-                $attendanceRecords = \App\Models\Attendance::where('class_room_id', $classRoom->id)
+            ->map(function ($student) use ($classRoom, $activeSemester) {
+                $attendanceQuery = \App\Models\Attendance::where('class_room_id', $classRoom->id)
                     ->where('student_id', $student->id)
                     ->with('subject')
-                    ->orderBy('date')
-                    ->get();
+                    ->orderBy('date');
+                    
+                if ($activeSemester) {
+                    $attendanceQuery->whereBetween('date', [
+                        $activeSemester->start_date->format('Y-m-d'),
+                        $activeSemester->end_date->format('Y-m-d')
+                    ]);
+                }
+                
+                $attendanceRecords = $attendanceQuery->get();
 
                 $stats = [
                     'hadir' => $attendanceRecords->where('status', 'HADIR')->count(),
@@ -246,7 +335,14 @@ class WaliKelasController extends Controller
             });
 
         // Class-wide attendance summary
-        $allAttendances = \App\Models\Attendance::where('class_room_id', $classRoom->id)->get();
+        $classAttendancesQuery = \App\Models\Attendance::where('class_room_id', $classRoom->id);
+        if ($activeSemester) {
+            $classAttendancesQuery->whereBetween('date', [
+                $activeSemester->start_date->format('Y-m-d'),
+                $activeSemester->end_date->format('Y-m-d')
+            ]);
+        }
+        $allAttendances = $classAttendancesQuery->get();
         
         $classAttendanceSummary = [
             'total_hadir' => $allAttendances->where('status', 'HADIR')->count(),

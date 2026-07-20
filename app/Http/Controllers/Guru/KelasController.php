@@ -38,25 +38,75 @@ class KelasController extends Controller
         $students = $classRoom->students()
             ->orderBy('name')
             ->get();
+            
+        // Semester Logic
+        $now = now()->format('Y-m-d');
+        $semesters = \App\Models\Semester::where('academic_year_id', $classRoom->academic_year_id)->get();
+        
+        $activeSemester = null;
+        $requestedSemesterId = $request->query('semester_id');
+        
+        if ($requestedSemesterId) {
+            $activeSemester = $semesters->firstWhere('id', $requestedSemesterId);
+        }
+        
+        if (!$activeSemester) {
+            $activeSemester = $semesters->first(function ($s) use ($now) {
+                return $s->start_date->format('Y-m-d') <= $now && $s->end_date->format('Y-m-d') >= $now;
+            });
+            
+            if (!$activeSemester) {
+                $activeSemester = $semesters->filter(function ($s) use ($now) {
+                    return $s->end_date->format('Y-m-d') < $now;
+                })->sortByDesc('end_date')->first();
+                
+                if (!$activeSemester) {
+                    $activeSemester = $semesters->firstWhere('type', '1');
+                }
+            }
+        }
 
         $attendanceQuery = Attendance::where('class_room_id', $classRoomId)
             ->where('teacher_id', $teacher->id)
             ->where('subject_id', $subjectId)
             ->orderBy('date', 'desc');
+            
+        if ($activeSemester) {
+            $attendanceQuery->whereBetween('date', [
+                $activeSemester->start_date->format('Y-m-d'),
+                $activeSemester->end_date->format('Y-m-d')
+            ]);
+        }
 
         $attendanceRecords = (clone $attendanceQuery)->get();
 
-        $availableMonthValues = $attendanceRecords->pluck('date')
-            ->map(function ($date) {
-                return \Carbon\Carbon::parse($date)->format('Y-m');
-            })
-            ->unique()
-            ->values();
+        $availableMonthValues = collect();
+        if ($activeSemester) {
+            $start = $activeSemester->start_date->copy()->startOfMonth();
+            $end = $activeSemester->end_date->copy()->startOfMonth();
+            while ($start->lte($end)) {
+                $availableMonthValues->push($start->format('Y-m'));
+                $start->addMonth();
+            }
+        } else {
+            $availableMonthValues = $attendanceRecords->pluck('date')
+                ->map(function ($date) {
+                    return \Carbon\Carbon::parse($date)->format('Y-m');
+                })
+                ->unique()
+                ->values();
+        }
 
         $requestedMonth = $request->query('month');
-        $selectedMonth = $availableMonthValues->contains($requestedMonth)
-            ? $requestedMonth
-            : $availableMonthValues->first();
+        $currentMonth = now()->format('Y-m');
+
+        if ($availableMonthValues->contains($requestedMonth)) {
+            $selectedMonth = $requestedMonth;
+        } elseif ($availableMonthValues->contains($currentMonth)) {
+            $selectedMonth = $currentMonth;
+        } else {
+            $selectedMonth = $availableMonthValues->first();
+        }
 
         $availableMonths = $availableMonthValues->map(function ($month) {
             $monthDate = \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01')->locale('id');
@@ -103,6 +153,15 @@ class KelasController extends Controller
             ];
         });
 
+        // Format semesters for Vue
+        $semestersData = $semesters->map(function($s) {
+            $typeLabel = $s->type == '1' ? 'Ganjil' : 'Genap';
+            return [
+                'id' => $s->id,
+                'label' => "Semester {$typeLabel} ({$s->start_date->format('M Y')} - {$s->end_date->format('M Y')})"
+            ];
+        });
+
         return Inertia::render('Guru/KelasDetail', [
             'classRoom' => [
                 'id' => $classRoom->id,
@@ -118,6 +177,8 @@ class KelasController extends Controller
             'attendanceData' => $attendanceData,
             'availableMonths' => $availableMonths,
             'selectedMonth' => $selectedMonth,
+            'semesters' => $semestersData,
+            'activeSemesterId' => $activeSemester ? $activeSemester->id : null,
         ]);
     }
 
@@ -149,13 +210,47 @@ class KelasController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Semester Logic
+        $now = now()->format('Y-m-d');
+        $semesters = \App\Models\Semester::where('academic_year_id', $classRoom->academic_year_id)->get();
+        
+        $activeSemester = null;
+        $requestedSemesterId = $request->query('semester_id');
+        
+        if ($requestedSemesterId) {
+            $activeSemester = $semesters->firstWhere('id', $requestedSemesterId);
+        }
+        
+        if (!$activeSemester) {
+            $activeSemester = $semesters->first(function ($s) use ($now) {
+                return $s->start_date->format('Y-m-d') <= $now && $s->end_date->format('Y-m-d') >= $now;
+            });
+            
+            if (!$activeSemester) {
+                $activeSemester = $semesters->filter(function ($s) use ($now) {
+                    return $s->end_date->format('Y-m-d') < $now;
+                })->sortByDesc('end_date')->first();
+                
+                if (!$activeSemester) {
+                    $activeSemester = $semesters->firstWhere('type', '1');
+                }
+            }
+        }
+
         // Get all attendance records for summary calculation
-        $attendanceRecords = Attendance::where('class_room_id', $classRoomId)
+        $attendanceQuery = Attendance::where('class_room_id', $classRoomId)
             ->where('teacher_id', $teacher->id)
             ->where('subject_id', $subjectId)
-            ->orderBy('date', 'asc')
-            ->get()
-            ->groupBy('student_id');
+            ->orderBy('date', 'asc');
+            
+        if ($activeSemester) {
+            $attendanceQuery->whereBetween('date', [
+                $activeSemester->start_date->format('Y-m-d'),
+                $activeSemester->end_date->format('Y-m-d')
+            ]);
+        }
+            
+        $attendanceRecords = $attendanceQuery->get()->groupBy('student_id');
 
         // Generate CSV content
         $csvData = [];

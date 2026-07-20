@@ -34,6 +34,14 @@ class AcademicYear extends Model
     }
 
     /**
+     * Get the semesters for this academic year.
+     */
+    public function semesters(): HasMany
+    {
+        return $this->hasMany(Semester::class);
+    }
+
+    /**
      * Scope to get only active academic year.
      */
     public function scopeActive($query)

@@ -343,3 +343,20 @@ Dokumen ini memetakan setiap fitur utama dalam aplikasi ke file-file relevan di 
 - **Task Mapping / Jika user berkata...**
     - *"Tampilkan informasi tambahan di card kelas guru"*: Buka `DashboardController.php`, tambahkan datanya pada hasil kembalian (return array) di iterasi `$myClasses`, lalu tampilkan di `Dashboard.vue` atau `RekapAbsen.vue`.
     - *"Ubah teks ketika jadwal guru kosong"*: Cari blok `v-else` di `Dashboard.vue` dan ubah teks "Belum ada jadwal yang diatur".
+
+---
+
+## 16. Logika Rekap Absensi (Portal Admin)
+
+- **Tujuan:** Menampilkan dan meng-export rekap absensi harian dan semester secara konsisten tanpa tumpang tindih data.
+- **Lokasi File Kunci:** `app/Filament/Pages/RekapAbsensi.php`
+- **Business Rules:**
+    - **Rekap Harian:** Sistem menghitung status kehadiran harian berdasarkan **mayoritas** sesi yang diikutinya (karena satu hari bisa terdiri dari beberapa mata pelajaran berbeda).
+    - Status **HADIR** diberikan jika jumlah sesi dengan status "HADIR" mencapai **>= 50%** dari total sesi di hari itu.
+    - Status **TIDAK HADIR** diberikan jika sesi "HADIR" kurang dari 50%.
+    - Status **TIDAK ADA DATA** diberikan jika `total_sessions == 0` (tidak ada catatan absen sama sekali).
+    - Tabel web (`getDailyTableQuery()`) menggunakan sub-query SQL (`selectRaw`) untuk mendapatkan angka agregat, sehingga filter dan sorting Eloquent tetap berjalan aman.
+    - CSV Harian (`exportDailyToCSV()`) menggunakan fungsi `groupBy('student_id')` tingkat Collection untuk melakukan agregasi data PHP yang identik dengan logika web.
+    - **Rekap Semester:** Menggunakan sub-query SQL yang menghitung total seluruh sesi (`total_days` direname menjadi `total_sessions` di UI/CSV untuk memperjelas bahwa itu adalah total pertemuan/mapel, bukan total hari kalender sekolah).
+- **Task Mapping / Jika user berkata...**
+    - *"Ubah logika minimum hadir dari 50% menjadi 75% di rekap admin"*: Buka `RekapAbsensi.php`, cari `($record->hadir_sessions >= ($record->total_sessions / 2))` di method `table()` dan logika serupa di `exportDailyToCSV()`. Ubah `/ 2` menjadi `* 0.75`.

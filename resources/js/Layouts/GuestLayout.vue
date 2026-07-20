@@ -14,7 +14,7 @@
                 />
             </div>
             <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                PORTAL GURU SMAN 10
+                PORTAL GURU SMAN 10 BOGOR
             </h1>
             <p class="text-gray-600 font-medium">Sistem Manajemen Absensi Siswa</p>
         </div>

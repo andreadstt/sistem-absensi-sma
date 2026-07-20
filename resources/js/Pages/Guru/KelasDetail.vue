@@ -9,8 +9,16 @@ const props = defineProps({
     attendanceDates: { type: Array, default: () => [] },
     availableMonths: { type: Array, default: () => [] },
     selectedMonth: { type: String, default: '' },
-    attendanceData: { type: Object, default: () => ({}) }
+    attendanceData: { type: Object, default: () => ({}) },
+    semesters: { type: Array, default: () => [] },
+    activeSemesterId: { type: [Number, String], default: null }
 });
+
+const handleSemesterChange = (event) => {
+    router.get(route('guru.kelas.show', [props.classRoom.id, props.classRoom.subject_id]), {
+        semester_id: event.target.value
+    }, { preserveState: true, replace: true });
+};
 
 const page = usePage();
 const flash = computed(() => page.props.flash || {});
@@ -180,15 +188,30 @@ const changeMonth = () => {
                             <p class="text-sm text-gray-600">Click ikon pada tanggal yang ingin anda edit</p>
                         </div>
                     </div>
-                    <a 
-                        :href="route('guru.kelas.export', [classRoom.id, classRoom.subject_id])" 
-                        class="btn-formal"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Export to CSV
-                    </a>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <!-- Semester Dropdown -->
+                        <div v-if="semesters.length > 0">
+                            <select 
+                                id="semester"
+                                :value="activeSemesterId"
+                                @change="handleSemesterChange"
+                                class="border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm text-sm text-gray-900 bg-white"
+                            >
+                                <option v-for="semester in semesters" :key="semester.id" :value="semester.id">
+                                    {{ semester.label }}
+                                </option>
+                            </select>
+                        </div>
+                        <a 
+                            :href="route('guru.kelas.export', [classRoom.id, classRoom.subject_id]) + (activeSemesterId ? '?semester_id=' + activeSemesterId : '')" 
+                            class="btn-formal whitespace-nowrap"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Export to CSV
+                        </a>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">

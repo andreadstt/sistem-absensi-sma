@@ -32,22 +32,63 @@ class AcademicYearResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label('Nama Tahun Ajaran')
-                    ->placeholder('2024/2025')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\DatePicker::make('start_date')
-                    ->label('Tanggal Mulai')
-                    ->required(),
-                Forms\Components\DatePicker::make('end_date')
-                    ->label('Tanggal Selesai')
-                    ->required()
-                    ->after('start_date'),
-                Forms\Components\Toggle::make('is_active')
-                    ->label('Aktif')
-                    ->default(false)
-                    ->helperText('Hanya satu tahun ajaran yang boleh aktif'),
+                Forms\Components\Section::make('Informasi Tahun Ajaran')
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nama Tahun Ajaran')
+                            ->placeholder('2024/2025')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\DatePicker::make('start_date')
+                            ->label('Tanggal Mulai (Keseluruhan)')
+                            ->required(),
+                        Forms\Components\DatePicker::make('end_date')
+                            ->label('Tanggal Selesai (Keseluruhan)')
+                            ->required()
+                            ->after('start_date'),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Aktif')
+                            ->default(false)
+                            ->helperText('Hanya satu tahun ajaran yang boleh aktif'),
+                    ])->columns(2),
+                
+                Forms\Components\Section::make('Pengaturan Semester')
+                    ->schema([
+                        Forms\Components\Repeater::make('semesters')
+                            ->relationship()
+                            ->schema([
+                                Forms\Components\Select::make('type')
+                                    ->label('Semester')
+                                    ->options([
+                                        '1' => 'Ganjil',
+                                        '2' => 'Genap',
+                                    ])
+                                    ->required()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                                Forms\Components\DatePicker::make('start_date')
+                                    ->label('Tanggal Mulai')
+                                    ->required(),
+                                Forms\Components\DatePicker::make('end_date')
+                                    ->label('Tanggal Selesai')
+                                    ->required()
+                                    ->after('start_date'),
+                            ])
+                            ->minItems(2)
+                            ->maxItems(2)
+                            ->columns(3)
+                            ->defaultItems(2)
+                            ->rule(function () {
+                                return function (string $attribute, $value, \Closure $fail) {
+                                    $s1 = collect($value)->firstWhere('type', '1');
+                                    $s2 = collect($value)->firstWhere('type', '2');
+                                    if ($s1 && $s2 && !empty($s1['end_date']) && !empty($s2['start_date'])) {
+                                        if (strtotime($s1['end_date']) >= strtotime($s2['start_date'])) {
+                                            $fail('Tanggal selesai Semester Ganjil harus sebelum tanggal mulai Semester Genap.');
+                                        }
+                                    }
+                                };
+                            })
+                    ]),
             ]);
     }
 

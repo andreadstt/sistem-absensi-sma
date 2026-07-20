@@ -1,6 +1,6 @@
 <script setup>
 import GuruLayout from '@/Layouts/GuruLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
@@ -8,8 +8,16 @@ const props = defineProps({
     students: { type: Array, default: () => [] },
     stats: { type: Object, default: () => ({}) },
     classAttendanceSummary: { type: Object, default: () => ({}) },
-    teacherName: { type: String, default: '' }
+    teacherName: { type: String, default: '' },
+    semesters: { type: Array, default: () => [] },
+    activeSemesterId: { type: [Number, String], default: null }
 });
+
+const handleSemesterChange = (event) => {
+    router.get(route('guru.wali-kelas.show', props.classRoom.id), {
+        semester_id: event.target.value
+    }, { preserveState: true, replace: true });
+};
 
 const searchQuery = ref('');
 const expandedStudentId = ref(null);
@@ -88,23 +96,39 @@ const formatDateToIndonesian = (dateString) => {
 
             <!-- Class Info Card -->
             <div class="info-card bg-white p-3 sm:p-4 md:p-6 rounded-lg border border-gray-200">
-                
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                    <div class="stat-box">
-                        <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Kelas</div>
-                        <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.name }}</div>
+                <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 flex-1">
+                        <div class="stat-box">
+                            <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Kelas</div>
+                            <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.name }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Tahun Akademik</div>
+                            <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.academic_year }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Program</div>
+                            <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.program }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Wali Kelas</div>
+                            <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.head_teacher.name }}</div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Tahun Akademik</div>
-                        <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.academic_year }}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Program</div>
-                        <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.program }}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="text-xs sm:text-sm text-gray-600 font-medium mb-1">Wali Kelas</div>
-                        <div class="text-base sm:text-lg md:text-xl font-bold text-gray-900">{{ classRoom.head_teacher.name }}</div>
+                    
+                    <!-- Semester Dropdown -->
+                    <div v-if="semesters.length > 0" class="w-full md:w-64">
+                        <label for="semester" class="block text-xs sm:text-sm text-gray-600 font-medium mb-1">Pilih Semester</label>
+                        <select 
+                            id="semester"
+                            :value="activeSemesterId"
+                            @change="handleSemesterChange"
+                            class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm text-sm text-gray-900 bg-white"
+                        >
+                            <option v-for="semester in semesters" :key="semester.id" :value="semester.id">
+                                {{ semester.label }}
+                            </option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -187,7 +211,7 @@ const formatDateToIndonesian = (dateString) => {
                             </div>
                         </div>
                         <a
-                            :href="route('guru.wali-kelas.export', classRoom.id)"
+                            :href="route('guru.wali-kelas.export', classRoom.id) + (activeSemesterId ? '?semester_id=' + activeSemesterId : '')"
                             class="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium rounded-lg transition"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

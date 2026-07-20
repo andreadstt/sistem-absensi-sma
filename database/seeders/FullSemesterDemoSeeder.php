@@ -86,6 +86,15 @@ class FullSemesterDemoSeeder extends Seeder
             ]
         );
         
+        $academicYear->semesters()->firstOrCreate(
+            ['type' => '1'],
+            ['start_date' => "{$startYear}-07-01", 'end_date' => "{$startYear}-12-31"]
+        );
+        $academicYear->semesters()->firstOrCreate(
+            ['type' => '2'],
+            ['start_date' => "{$endYear}-01-01", 'end_date' => "{$endYear}-06-30"]
+        );
+
         $this->command->info("   ✓ Academic Year: {$academicYear->name} (Active)");
     }
 
@@ -300,7 +309,7 @@ class FullSemesterDemoSeeder extends Seeder
             for ($i = 1; $i <= $studentsCount; $i++) {
                 $name = $firstNames[array_rand($firstNames)] . ' ' . $lastNames[array_rand($lastNames)];
                 $nis = '2025' . str_pad($class->grade_level, 2, '0', STR_PAD_LEFT) . str_pad($class->id, 2, '0', STR_PAD_LEFT) . str_pad($i, 3, '0', STR_PAD_LEFT);
-                
+
                 Student::updateOrCreate(
                     ['nis' => $nis],
                     [
@@ -312,6 +321,34 @@ class FullSemesterDemoSeeder extends Seeder
                 $totalStudents++;
             }
         }
+
+        // ADDITIVE SCENARIO: Append 2 special students to 11 MIPA 1 (Demo Class) at the VERY END.
+        // This ensures the autoincrement ID generation order for all original students remains exactly the same.
+        $demoClass = collect($classes)->first(function($c) {
+            return $c->grade_level == 11 && str_contains($c->name, 'MIPA') && $c->section == '1';
+        });
+
+        if ($demoClass) {
+            Student::updateOrCreate(
+                ['nis' => 'TRANSFER001'],
+                [
+                    'name' => 'Siswa Pindahan (Demo)',
+                    'gender' => 'M',
+                    'class_room_id' => $demoClass->id,
+                ]
+            );
+            
+            Student::updateOrCreate(
+                ['nis' => 'NODATA002'],
+                [
+                    'name' => 'Siswa Tanpa Data (Demo)',
+                    'gender' => 'F',
+                    'class_room_id' => $demoClass->id,
+                ]
+            );
+            $totalStudents += 2;
+        }
+
         $this->command->info("   ✓ Created {$totalStudents} students");
     }
 
@@ -424,9 +461,15 @@ class FullSemesterDemoSeeder extends Seeder
     {
         $this->command->info('📊 Creating Student Attendance Records (Last 5 Months)...');
         
-        // Semester 1: Juli - November 2025 (5 months of data)
-        $endDate = now()->endOfDay();
-        $startDate = $endDate->copy()->subMonths(5)->startOfDay();
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        $semesters = $activeYear->semesters()->get();
+        $activeSemester = $semesters->first(function ($s) {
+            $now = now();
+            return $s->start_date <= $now && $s->end_date >= $now;
+        }) ?? $semesters->firstWhere('type', '1');
+        
+        $startDate = $activeSemester->start_date->copy();
+        $endDate = $activeSemester->end_date->copy();
         $dates = [];
         $current = $startDate->copy();
         while ($current->lte($endDate)) {
@@ -475,6 +518,19 @@ class FullSemesterDemoSeeder extends Seeder
                     }
                     
                     foreach ($students as $student) {
+                        // Intercept special students BEFORE hashing to ensure they do not shift loop timing/logic
+                        if ($student->nis === 'NODATA002') {
+                            continue; // No data ever
+                        }
+                        
+                        if ($student->nis === 'TRANSFER001') {
+                            // Only generate attendance for the last 5 days of the semester dates array
+                            // Actually, just check if date is within 5 days of now()
+                            if ($date->diffInDays(now()) > 5) {
+                                continue;
+                            }
+                        }
+
                         // Deterministic hash per student per day!
                         $hash = md5($student->id . '_' . $dateStr);
                         $rand = hexdec(substr($hash, 0, 4)) % 100 + 1;
@@ -522,8 +578,15 @@ class FullSemesterDemoSeeder extends Seeder
     {
         $this->command->info('👨‍🏫 Creating Teacher Attendances...');
         
-        $endDate = now()->endOfDay();
-        $startDate = $endDate->copy()->subMonths(5)->startOfDay();
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        $semesters = $activeYear->semesters()->get();
+        $activeSemester = $semesters->first(function ($s) {
+            $now = now();
+            return $s->start_date <= $now && $s->end_date >= $now;
+        }) ?? $semesters->firstWhere('type', '1');
+        
+        $startDate = $activeSemester->start_date->copy();
+        $endDate = $activeSemester->end_date->copy();
         $dates = [];
         $current = $startDate->copy();
         while ($current->lte($endDate)) {

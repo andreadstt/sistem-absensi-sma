@@ -22,14 +22,24 @@ class AcademicSystemSeeder extends Seeder
             'end_date' => '2025-06-30',
             'is_active' => true,
         ]);
+        
+        $currentYear->semesters()->createMany([
+            ['type' => '1', 'start_date' => '2024-07-15', 'end_date' => '2024-12-31'],
+            ['type' => '2', 'start_date' => '2025-01-01', 'end_date' => '2025-06-30'],
+        ]);
 
-        AcademicYear::create([
+        $pastYear = AcademicYear::create([
             'name' => '2023/2024',
             'start_year' => 2023,
             'end_year' => 2024,
             'start_date' => '2023-07-15',
             'end_date' => '2024-06-30',
             'is_active' => false,
+        ]);
+
+        $pastYear->semesters()->createMany([
+            ['type' => '1', 'start_date' => '2023-07-15', 'end_date' => '2023-12-31'],
+            ['type' => '2', 'start_date' => '2024-01-01', 'end_date' => '2024-06-30'],
         ]);
 
         // Create Programs (Jurusan)
